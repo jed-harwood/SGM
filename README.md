@@ -12,3 +12,10 @@ Please make sure that the following packages are installed before using the R pa
 ```
 install.packages(c("doParallel", "foreach", "gmp"))
 ```
+
+## Installation
+The R Package `SGM` can be installed from source files, in this GitHub repository.  The `devtools` package is required for installation.  
+```
+library(devtools)
+install_github(repo="jed-harwood/SGM")
+```
