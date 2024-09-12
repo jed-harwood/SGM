@@ -19,3 +19,9 @@ The R Package `SGM` can be installed from source files, in this GitHub repositor
 library(devtools)
 install_github(repo="jed-harwood/SGM")
 ```
+
+## Main Functions
+
+
+## Contact
+Please report any bugs to `jedharwood@ucdavis.edu`
