@@ -1,0 +1,1 @@
+PKG_CXXFLAGS =-O3 -Ofast -march=native -funroll-loops -ffast-math
