@@ -201,7 +201,14 @@ bool Dual_Cri(Eigen::MatrixXd& Z, Eigen::MatrixXd& Z_u, Eigen::MatrixXd& W, Eige
 }
 
 
-//' Added 10/9/2024
+//' ADMM algorithm for estimating (normalized) graph Laplacian given v0 and theta0
+//' 
+//' @param `s` an estimated covariance matrix, such as the sample covariance matrix
+//' @param `theta0` A given graph filter parameter
+//' @param `v` A given degree vector
+//' @param `rho` ADMM parameter 
+//' @param `lambda` Tuning parameter
+//' @param `model` A character specifying which type of Laplacian to use
 //' @export
 // [[Rcpp::export]]
 List ADMM_L2(const Rcpp::NumericMatrix& s, double theta0, Rcpp::NumericVector& v, double rho, double lambda, std::string model, const Rcpp::NumericMatrix& Z_ini, const Rcpp::NumericMatrix& W_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){

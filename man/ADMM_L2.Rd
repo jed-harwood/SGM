@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{ADMM_L2}
 \alias{ADMM_L2}
-\title{Added 10/9/2024}
+\title{ADMM algorithm for estimating (normalized) graph Laplacian given v0 and theta0}
 \usage{
 ADMM_L2(
   s,
@@ -20,6 +20,19 @@ ADMM_L2(
   verbose
 )
 }
+\arguments{
+\item{`s`}{an estimated covariance matrix, such as the sample covariance matrix}
+
+\item{`theta0`}{A given graph filter parameter}
+
+\item{`v`}{A given degree vector}
+
+\item{`rho`}{ADMM parameter}
+
+\item{`lambda`}{Tuning parameter}
+
+\item{`model`}{A character specifying which type of Laplacian to use}
+}
 \description{
-Added 10/9/2024
+ADMM algorithm for estimating (normalized) graph Laplacian given v0 and theta0
 }
