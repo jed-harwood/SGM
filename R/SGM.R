@@ -5,7 +5,7 @@
 #' @section SGM functions: 
 #' put them here
 #' 
-#' @docType package
+#' @docType _PACKAGE
 #' @name SGM
 #' @useDynLib SGM, .registration=TRUE
 NULL

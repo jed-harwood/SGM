@@ -1,5 +1,4 @@
-#' Example for using GAR1_fit
-
+\dontrun{
 ### Load data
 load("data/stocks.Rdata")
 n=nrow(stocks)
@@ -16,4 +15,5 @@ net.thre=C.thre*sqrt(log(p)/n)
 
 ### Run GAR1_fit
 S = var(stocks)*(n-1)/n
-#resList = GAR1_fit(S, n, lambda.v, net.thre, model)
+resList = GAR1_fit(S, n, lambda.v, net.thre, model) 
+}

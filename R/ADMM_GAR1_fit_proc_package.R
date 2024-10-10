@@ -223,7 +223,7 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' GAR(1) fitting procedure
 #' 
 #' @description
-#' `GAR1_fit` performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters `theta0` and `theta`, and the normalized graph Laplacian `L`.  Additionally, this function performs a goodness of fit test, which works when the sample size is greater than or equal to the dimension of the observations.
+#' `GAR1_fit` performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters `theta0` and `theta`, and the normalized graph Laplacian `L`.  
 #' 
 #' @param `S` An estimate of the covariance matrix, such as the MLE.
 #' @param `nobs` The number of samples used to calculate `S`
@@ -253,6 +253,7 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' * `theta0.0S` A positive number. The estimated theta0 from Step 3
 #' * `conv.0.v0` A matrix containing convergence results for each combination of `lambda.v` (rows) and `net.thre` (columns)
 #' 
+#' @example man-roxygen/GAR1_fit_example.R
 #' @export
 GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v, eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter_1a=10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose=F){
   
