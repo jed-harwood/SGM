@@ -220,7 +220,39 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #################################
 ## Model Fitting function
 ################################
-#' Exported function
+#' GAR(1) fitting procedure
+#' 
+#' @description
+#' `GAR1_fit` performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters `theta0` and `theta`, and the normalized graph Laplacian `L`.  Additionally, this function performs a goodness of fit test, which works when the sample size is greater than or equal to the dimension of the observations.
+#' 
+#' @param `S` An estimate of the covariance matrix, such as the MLE.
+#' @param `nobs` The number of samples used to calculate `S`
+#' @param `lambda.v` Tuning parameter to control sparsity of the estimated graph
+#' @param `net.thre` Tuning parameter to control noisy entries in estimated graph
+#' @param `model`
+#' * `"LN"` Fits a normalized graph Laplacian
+#' * `"L"` Fits a graph Laplacian
+#' * `"LN.noselfloop"` Fits a normalized graph laplacian assuming no self-loops.
+#' @param `step` How many steps of the estimation procedure you want to run. Either 2 or 3.
+#' @param `rho.v` ADMM parameter (typically equal to `lambda.v`)
+#' @param `eps_thre` Small positive number
+#' @param `eps_abs` ADMM convergence criterion
+#' @param `eps_rel` ADMM convergence criterion
+#' @param `max_iter_1`, `max_iter_2`, `max_iter_3a`Maximum number of iterations for algorithm
+#' 
+#' @returns
+#' A list object
+#' * `S` The p by p estimated covariance matrix
+#' * `result.L2.0` A list containing the Step 1a results
+#' * `result.0.post` A list containing the Step 2a results
+#' * `result.0S` A list containing the Step 3 results (NULL if `step<3`)
+#' * `A.0.net` A matrix that encodes the estimated graph topology
+#' * `net.0.size` An integer containing the number of edges in the estimated graph
+#' * `v0.0.est` A p by 1 matrix containing the estimated degree vector
+#' * `theta0.0` A positive number. The estimated theta0 from Step 2
+#' * `theta0.0S` A positive number. The estimated theta0 from Step 3
+#' * `conv.0.v0` A matrix containing convergence results for each combination of `lambda.v` (rows) and `net.thre` (columns)
+#' 
 #' @export
 GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v, eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter_1a=10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose=F){
   
@@ -277,7 +309,25 @@ bootstrap.like <- function(L, theta0, theta1, n, rep.boot=1000){
 ####################################
 ## eBIC and log-likelihood selection
 ######
-#' Export function
+#' Select tuning parameters for GAR(1) model
+#' 
+#' @description
+#' Given a list of models, uses eBIC criterion to select the appropriate tuning parameters for GAR(1) and conducts a goodness of fit test.
+#' 
+#' @param `resultList` A list output from `GAR1_fit`
+#' @param `n` An integer referring to the number of observations
+#' @param `step` 2 or 3; How many steps were used to fit the model.
+#' @param `model` Which model to consider
+#' * `"LN"` Normalized graph Laplacian
+#' * `"L"` Graph Laplacian
+#' * `"LN.noselfloop"` Normalized graph Laplacian without self-loops. 
+#' 
+#' @returns A list object
+#' * `model.selec` A list containing the model with the model chosen by the eBIC criterion.
+#' * `A.net.e` A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
+#' * `index` Index for the eBIC-selected model.
+#' * `goodness.fit` Results for a goodness of fit test (valid for n >= p)
+#' 
 #' @export
 model_selec = function(resultList, n, step = 3, model = "LN", select = "eBIC"){
   

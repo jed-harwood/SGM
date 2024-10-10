@@ -2,7 +2,7 @@
 % Please edit documentation in R/ADMM_GAR1_Deg_L.R
 \name{ADMM.Deg.L}
 \alias{ADMM.Deg.L}
-\title{Exported function}
+\title{Estimate degree vector from a given Laplacian matrix}
 \usage{
 ADMM.Deg.L(
   L,
@@ -14,6 +14,24 @@ ADMM.Deg.L(
   verbose = TRUE
 )
 }
+\arguments{
+\item{L}{A p by p normalized graph Laplacian}
+
+\item{rho}{ADMM parameter (a positive number)}
+
+\item{epsilon}{A positive small value}
+
+\item{eps.abs}{ADMM convergence criterion}
+
+\item{eps.rel}{ADMM convergence criterion}
+
+\item{max.iter}{Maximum number of iterations to run the algorithm}
+
+\item{verbose}{Trace of fitting procedure}
+}
+\value{
+A p by 1 matrix
+}
 \description{
-Exported function
+\code{ADMM.Deg.L} returns an estimated degree vector to minimize ||Lv0||, with each element restricted to be at least epsilon.
 }

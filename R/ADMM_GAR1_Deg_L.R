@@ -68,7 +68,22 @@ w.Min<-function(v,u, epsilon=1e-2){
 ## WRAPPER FUNCTION ####
 ########################
 
-#'Exported function
+#' Estimate degree vector from a given Laplacian matrix
+#' 
+#' @description
+#' `ADMM.Deg.L` returns an estimated degree vector to minimize ||Lv0||, with each element restricted to be at least epsilon.
+#' 
+#' @returns
+#' A p by 1 matrix
+#' 
+#' @param L A p by p normalized graph Laplacian
+#' @param rho ADMM parameter (a positive number)
+#' @param epsilon A positive small value
+#' @param eps.abs ADMM convergence criterion
+#' @param eps.rel ADMM convergence criterion
+#' @param max.iter Maximum number of iterations to run the algorithm
+#' @param verbose Trace of fitting procedure
+#' 
 #'@export
 ADMM.Deg.L<-function(L,rho=0.01, epsilon=sqrt(1/nrow(S)), eps.abs=1e-5, eps.rel=1e-3, max.iter=1000, verbose=TRUE){
   ## ADMM algorithm to find the 0-eigenvector of LN, proportional to square-root of the degree vector of the graph

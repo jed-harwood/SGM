@@ -2,7 +2,7 @@
 % Please edit documentation in R/ADMM_GAR1_fit_proc_package.R
 \name{GAR1_fit}
 \alias{GAR1_fit}
-\title{Exported function}
+\title{GAR(1) fitting procedure}
 \usage{
 GAR1_fit(
   S,
@@ -21,6 +21,48 @@ GAR1_fit(
   verbose = F
 )
 }
+\arguments{
+\item{`S`}{An estimate of the covariance matrix, such as the MLE.}
+
+\item{`nobs`}{The number of samples used to calculate \code{S}}
+
+\item{`lambda.v`}{Tuning parameter to control sparsity of the estimated graph}
+
+\item{`net.thre`}{Tuning parameter to control noisy entries in estimated graph}
+
+\item{`model`}{\itemize{
+\item \code{"LN"} Fits a normalized graph Laplacian
+\item \code{"L"} Fits a graph Laplacian
+\item \code{"LN.noselfloop"} Fits a normalized graph laplacian assuming no self-loops.
+}}
+
+\item{`step`}{How many steps of the estimation procedure you want to run. Either 2 or 3.}
+
+\item{`rho.v`}{ADMM parameter (typically equal to \code{lambda.v})}
+
+\item{`eps_thre`}{Small positive number}
+
+\item{`eps_abs`}{ADMM convergence criterion}
+
+\item{`eps_rel`}{ADMM convergence criterion}
+
+\item{`max_iter_1`, }{\code{max_iter_2}, \code{max_iter_3a}Maximum number of iterations for algorithm}
+}
+\value{
+A list object
+\itemize{
+\item \code{S} The p by p estimated covariance matrix
+\item \code{result.L2.0} A list containing the Step 1a results
+\item \code{result.0.post} A list containing the Step 2a results
+\item \code{result.0S} A list containing the Step 3 results (NULL if \code{step<3})
+\item \code{A.0.net} A matrix that encodes the estimated graph topology
+\item \code{net.0.size} An integer containing the number of edges in the estimated graph
+\item \code{v0.0.est} A p by 1 matrix containing the estimated degree vector
+\item \code{theta0.0} A positive number. The estimated theta0 from Step 2
+\item \code{theta0.0S} A positive number. The estimated theta0 from Step 3
+\item \code{conv.0.v0} A matrix containing convergence results for each combination of \code{lambda.v} (rows) and \code{net.thre} (columns)
+}
+}
 \description{
-Exported function
+\code{GAR1_fit} performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters \code{theta0} and \code{theta}, and the normalized graph Laplacian \code{L}.  Additionally, this function performs a goodness of fit test, which works when the sample size is greater than or equal to the dimension of the observations.
 }
