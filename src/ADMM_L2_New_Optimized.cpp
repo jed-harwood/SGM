@@ -200,6 +200,9 @@ bool Dual_Cri(Eigen::MatrixXd& Z, Eigen::MatrixXd& Z_u, Eigen::MatrixXd& W, Eige
   return res_dual <= eps_dual; 
 }
 
+
+//' Added 10/9/2024
+//' @export
 // [[Rcpp::export]]
 List ADMM_L2(const Rcpp::NumericMatrix& s, double theta0, Rcpp::NumericVector& v, double rho, double lambda, std::string model, const Rcpp::NumericMatrix& Z_ini, const Rcpp::NumericMatrix& W_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){
   
@@ -281,8 +284,8 @@ List ADMM_L2(const Rcpp::NumericMatrix& s, double theta0, Rcpp::NumericVector& v
   
 }
 
-
-
+//' Added 10/09/2024
+//' @export
 // [[Rcpp::export]]
 List ADMM_L2_Zero(const Rcpp::NumericMatrix& SS, double theta0, Rcpp::NumericVector& v, double rho, const Rcpp::NumericMatrix AA, std::string model, const Rcpp::NumericMatrix& Z_ini, const Rcpp::NumericMatrix& W_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){
   
@@ -366,6 +369,10 @@ List ADMM_L2_Zero(const Rcpp::NumericMatrix& SS, double theta0, Rcpp::NumericVec
 }
 
 
+
+
+//' Added 10/9/2024
+//' @export
 // [[Rcpp::export]]
 List ADMM_L2_seq(const Rcpp::NumericMatrix& S, double theta0, Rcpp::NumericVector& v0, Rcpp::NumericVector& Rho, Rcpp::NumericVector& Lambda, std::string model, bool ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){
   

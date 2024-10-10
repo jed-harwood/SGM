@@ -401,6 +401,8 @@ bool Dual_Cri(const Eigen::MatrixXd Z, const Eigen::MatrixXd Z_u, const Eigen::M
 //// Z_max_iter, Z_conv_abs, Z_conv_rel: maximum number of steps and convergence thresholds for Z-phi minimization step (inner iteration)
 //// Return: L, Z, W, and convergence status.
 
+//' Added 10/9/2024
+//' @export
 // [[Rcpp::export]]
 List ADMM_Lap(const Rcpp::NumericMatrix& SS, Rcpp::NumericVector& V0, double rho, double lambda, std::string model, const Rcpp::NumericMatrix& ZZ_ini, const Rcpp::NumericMatrix& WW_ini, double phi_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, int Z_max_iter, double Z_conv_abs, double Z_conv_rel, bool verbose){
   
@@ -510,6 +512,8 @@ List ADMM_Lap(const Rcpp::NumericMatrix& SS, Rcpp::NumericVector& V0, double rho
   
 }
 
+//' Added 10/09/2024
+//' @export
 // [[Rcpp::export]]
 List ADMM_Lap_Zero(const Rcpp::NumericMatrix& SS, Rcpp::NumericVector& V0, double rho, const Rcpp::NumericMatrix& AA, std::string model, const Rcpp::NumericMatrix& ZZ_ini, const Rcpp::NumericMatrix& WW_ini, double phi_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, int Z_max_iter, double Z_conv_abs, double Z_conv_rel, bool verbose){
   
