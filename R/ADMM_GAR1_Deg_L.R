@@ -68,6 +68,8 @@ w.Min<-function(v,u, epsilon=1e-2){
 ## WRAPPER FUNCTION ####
 ########################
 
+#'Exported function
+#'@export
 ADMM.Deg.L<-function(L,rho=0.01, epsilon=sqrt(1/nrow(S)), eps.abs=1e-5, eps.rel=1e-3, max.iter=1000, verbose=TRUE){
   ## ADMM algorithm to find the 0-eigenvector of LN, proportional to square-root of the degree vector of the graph
   ## L: p by p, Laplacian 
