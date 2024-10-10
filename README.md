@@ -21,9 +21,9 @@ install_github(repo="jed-harwood/SGM")
 ```
 
 ## Main Functions
-`GAR1_ADMM_fit`: learn a GAR(1) SGM for a given set of tuning parameters
+`GAR1_fit`: learn a GAR(1) SGM for a given set of tuning parameters
 
-`model_selection`: conduct model selection via the eBIC criterion or log-likelihood
+`model_selec`: conduct model selection via the eBIC criterion
 
 ## Contact
 Please report any bugs to `jedharwood@ucdavis.edu`
