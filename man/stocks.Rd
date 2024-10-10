@@ -3,15 +3,18 @@
 \docType{data}
 \name{stocks}
 \alias{stocks}
-\title{Stock data}
+\title{Example dataset: stocks}
 \format{
-An object of class \code{matrix}
+A 283 by 1007 matrix
+}
+\source{
+TBD
 }
 \usage{
 data(stocks)
 }
 \description{
-A 283 by 1007 matrix with Stock Data from the S&P 500.
+A matrix with Stock Data from the S&P 500.
 }
 \examples{
 data(stocks)
@@ -19,4 +22,4 @@ data(stocks)
 \references{
 Peng et al. 2024
 }
-\keyword{dataset}
+\keyword{datasets}
