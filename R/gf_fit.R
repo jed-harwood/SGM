@@ -2,14 +2,22 @@
 ##### goodness of fit by parametric bootsrap
 ##### Added 2024-09-27: Use Step 1 Estimates 
 
-bootstrap.like <- function(L, theta0, theta1, n, rep.boot=100, num.thread = 1){
+require(foreach)
+require(doParallel)
+
+bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.boot=100, num.thread = 1){
   
   ## Reserve cores for parallel fitting
   registerDoParallel(num.thread)
   
   ## Generate bootstrap samples
+  print("Samples generating...")
   temp = GenData.L2(n, theta0, theta1, L, rep.boot)
   data.boot = temp$data # Extract datasets 
+  
+  print(paste("Fitting Bootstrap Samples..."))
+  
+  p = nrow(L)
   
   ## Refit GAR(1) with step 1 to bootstrap samples
   temp = foreach(i = 1:rep.boot, .combine = "c", .maxcombine=max(rep.boot,2)) %dopar% {
@@ -19,13 +27,14 @@ bootstrap.like <- function(L, theta0, theta1, n, rep.boot=100, num.thread = 1){
     theta0.i.ini = 1/sqrt(max(eigen(S.c, symmetric = T, only.values = T)$values))
     
     ## Fit GAR(1) to each replicate
-    fit.rep.i = ADMM_L2(S.c, theta0.i.ini, v=rep(0,ncol(S.c)), rho.v[j], lambda.v[j], model=model, Z_ini=matrix(0, p, p), W_ini=matrix(0, p, p), 
+    fit.rep.i = ADMM_L2(S.c, theta0.i.ini, v=rep(0,ncol(S.c)), rho.v, lambda.v, model="LN", Z_ini=matrix(0, p, p), W_ini=matrix(0, p, p), 
                         eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter=100000, verbose=FALSE)
     theta1.i = fit.rep.i$theta1
     L.i = fit.rep.i$L
     LogLike(S.c, theta0.i.ini, theta1.i, L.i, n)
   }
   
+  print(paste("P-value:"))
   return(temp)
 }
 
@@ -50,19 +59,21 @@ bootstrap.like <- function(L, theta0, theta1, n, rep.boot=100, num.thread = 1){
 #' @returns p-value for the goodness of fit test 
 #' 
 #' @export
-GAR1.gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 10000, num.threads = 1){
+GAR1_gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 10000, num.thread = 1){
   
   ## Fit step 1 to observed data
   init.step = fit_step_0a(S, nobs)
   init.fit = fit_step_1a(init.step, lambda.v, rho.v, "LN", eps_thre, eps_abs, eps_rel, max_iter, F)
   
+  print("Initial fit completed")
+
   ## Extract the fit results
   theta0.est = init.step$theta0
-  theta1.est = init.fit$theta1
-  L.est = init.fit$L
+  theta1.est = init.fit[[1]]$theta1
+  L.est = init.fit[[1]]$L
   
   ## Run bootstrap resamples and store log-likleihoods for each bootstrap sample
-  log.like.boot = bootstrap.like(L.est, theta0.est, theta1.est, nobs, 100)
+  log.like.boot = bootstrap.like(L.est, theta0.est, theta1.est, nobs, lambda.v, rho.v, 100, num.thread)
   
   ## Calculate observed log-likelihood
   log.like.obs = LogLike(S, theta0.est, theta1.est, L.est, nobs)
