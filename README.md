@@ -36,7 +36,7 @@ Please report any bugs to `jedharwood@ucdavis.edu`
 For more information on the `GAR1_fit` and `model_selec` functions, run `?GAR1_fit` and `?model_selec` in R.  
 
 ```
-data(stocks)
+data("stocks")
 n=nrow(stocks)
 p=ncol(stocks)
 model="LN"
