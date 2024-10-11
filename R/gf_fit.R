@@ -1,0 +1,76 @@
+#############
+##### goodness of fit by parametric bootsrap
+##### Added 2024-09-27: Use Step 1 Estimates 
+
+bootstrap.like <- function(L, theta0, theta1, n, rep.boot=100, num.thread = 1){
+  
+  ## Reserve cores for parallel fitting
+  registerDoParallel(num.thread)
+  
+  ## Generate bootstrap samples
+  temp = GenData.L2(n, theta0, theta1, L, rep.boot)
+  data.boot = temp$data # Extract datasets 
+  
+  ## Refit GAR(1) with step 1 to bootstrap samples
+  temp = foreach(i = 1:rep.boot, .combine = "c", .maxcombine=max(rep.boot,2)) %dopar% {
+    
+    ## Sample Covariance Matrix
+    S.c = var(data.boot[[i]])*(n-1)/n 
+    theta0.i.ini = 1/sqrt(max(eigen(S.c, symmetric = T, only.values = T)$values))
+    
+    ## Fit GAR(1) to each replicate
+    fit.rep.i = ADMM_L2(S.c, theta0.i.ini, v=rep(0,ncol(S.c)), rho.v[j], lambda.v[j], model=model, Z_ini=matrix(0, p, p), W_ini=matrix(0, p, p), 
+                        eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter=100000, verbose=FALSE)
+    theta1.i = fit.rep.i$theta1
+    L.i = fit.rep.i$L
+    LogLike(S.c, theta0.i.ini, theta1.i, L.i, n)
+  }
+  
+  return(temp)
+}
+
+
+
+
+#' Goodness of Fit Test
+#' 
+#' @description
+#' This function provides a goodness of fit test to see whether a GAR(1) model with the normalized laplacian is applicable.  It is valid for when the signal dimension is a most the number of observations available.
+#' 
+#' @param `S` Estimate for covariance matrix, such as the MLE
+#' @param `nobs` The number of observations used to calculate `S`
+#' @param `lambda.v` Tuning parameter for GAR(1).  Positive number.
+#' @param `rho.v` ADMM parameter.  Positive number.
+#' @param `eps_thre` Small positive number.
+#' @param `eps_abs` ADMM convergence criterion.
+#' @param `eps_rel` ADMM convergence criterion. 
+#' @param `max_iter` Number of iterations to run initial fit on observed data
+#' @param `num.threads` Number of threads to use for computing.
+#' 
+#' @returns p-value for the goodness of fit test 
+#' 
+#' @export
+GAR1.gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 10000, num.threads = 1){
+  
+  ## Fit step 1 to observed data
+  init.step = fit_step_0a(S, nobs)
+  init.fit = fit_step_1a(init.step, lambda.v, rho.v, "LN", eps_thre, eps_abs, eps_rel, max_iter, F)
+  
+  ## Extract the fit results
+  theta0.est = init.step$theta0
+  theta1.est = init.fit$theta1
+  L.est = init.fit$L
+  
+  ## Run bootstrap resamples and store log-likleihoods for each bootstrap sample
+  log.like.boot = bootstrap.like(L.est, theta0.est, theta1.est, nobs, 100)
+  
+  ## Calculate observed log-likelihood
+  log.like.obs = LogLike(S, theta0.est, theta1.est, L.est, nobs)
+  
+  ## Calculate vector of whether obs is greater than boot
+  pvals = log.like.obs > log.like.boot
+  
+  
+  ## Return mean (p-value)
+  return(mean(pvals))
+}
