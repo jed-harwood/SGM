@@ -1,6 +1,6 @@
 \dontrun{
 ### Load data
-load("data/stocks.Rdata")
+load("data/stocks.Rda")
 n=nrow(stocks)
 p=ncol(stocks)
 model="LN"
@@ -15,5 +15,6 @@ net.thre=C.thre*sqrt(log(p)/n)
 
 ### Run GAR1_fit
 S = var(stocks)*(n-1)/n
-resList = GAR1_fit(S, n, lambda.v, net.thre, model) 
+resList = GAR1_fit(S, n, lambda.v, net.thre, model, verbose = T,
+                  max_iter_1a = 100000, max_iter_2a = 100000, max_iter_3a = 100000) 
 }
