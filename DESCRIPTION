@@ -11,7 +11,9 @@ Imports:
   Rcpp (>= 1.0.4),
   doParallel (>= 1.0.8),
   foreach (>= 1.2.0),
-  gmp (>= 0.7-4)
+  gmp (>= 0.7-4),
+  mnormt (>= 2.1.1)
 LinkingTo: Rcpp, RcppEigen
+NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2

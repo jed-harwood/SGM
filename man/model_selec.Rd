@@ -4,7 +4,7 @@
 \alias{model_selec}
 \title{Select tuning parameters for GAR(1) model}
 \usage{
-model_selec(resultList, n, step = 3, model = "LN", select = "eBIC")
+model_selec(resultList, n, step = 3, model = "LN")
 }
 \arguments{
 \item{`resultList`}{A list output from \code{GAR1_fit}}

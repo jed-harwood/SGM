@@ -2,25 +2,19 @@
 ##### goodness of fit by parametric bootsrap
 ##### Added 2024-09-27: Use Step 1 Estimates 
 
-require(foreach)
-require(doParallel)
-
-bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.boot=100, num.thread = 1){
-  
-  ## Reserve cores for parallel fitting
-  registerDoParallel(num.thread)
+bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.boot=100, num.thread = 1, seed = 1){
   
   ## Generate bootstrap samples
   print("Samples generating...")
+  set.seed(1)
   temp = GenData.L2(n, theta0, theta1, L, rep.boot)
   data.boot = temp$data # Extract datasets 
-  
   print(paste("Fitting Bootstrap Samples..."))
-  
+
   p = nrow(L)
   
   ## Refit GAR(1) with step 1 to bootstrap samples
-  temp = foreach(i = 1:rep.boot, .combine = "c", .maxcombine=max(rep.boot,2)) %dopar% {
+  temp = foreach(i = 1:rep.boot, .combine = 'c', .packages = c("mnormt")) %dopar% {
     
     ## Sample Covariance Matrix
     S.c = var(data.boot[[i]])*(n-1)/n 
@@ -33,8 +27,6 @@ bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.b
     L.i = fit.rep.i$L
     LogLike(S.c, theta0.i.ini, theta1.i, L.i, n)
   }
-  
-  print(paste("P-value:"))
   return(temp)
 }
 
@@ -55,11 +47,15 @@ bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.b
 #' @param `eps_rel` ADMM convergence criterion. 
 #' @param `max_iter` Number of iterations to run initial fit on observed data
 #' @param `num.threads` Number of threads to use for computing.
+#' @param rep.boot Number of bootstrap samples to generate for test.
 #' 
 #' @returns p-value for the goodness of fit test 
 #' 
 #' @export
-GAR1_gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 10000, num.thread = 1){
+GAR1_gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 10000, num.thread = 1, rep.boot = 100, seed = 1){
+  
+  ## Reserve cores
+  registerDoParallel(num.thread)
   
   ## Fit step 1 to observed data
   init.step = fit_step_0a(S, nobs)
@@ -73,7 +69,8 @@ GAR1_gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs =
   L.est = init.fit[[1]]$L
   
   ## Run bootstrap resamples and store log-likleihoods for each bootstrap sample
-  log.like.boot = bootstrap.like(L.est, theta0.est, theta1.est, nobs, lambda.v, rho.v, 100, num.thread)
+  log.like.boot = bootstrap.like(L.est, theta0.est, theta1.est, nobs, lambda.v, rho.v, rep.boot, num.thread, seed)
+
   
   ## Calculate observed log-likelihood
   log.like.obs = LogLike(S, theta0.est, theta1.est, L.est, nobs)
@@ -81,7 +78,10 @@ GAR1_gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs =
   ## Calculate vector of whether obs is greater than boot
   pvals = log.like.obs > log.like.boot
   
+  ## DEBUG: Check fits
+  print(length(pvals))
   
   ## Return mean (p-value)
+  print("p-value:")
   return(mean(pvals))
 }

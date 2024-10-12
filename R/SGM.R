@@ -8,4 +8,9 @@
 #' @docType _PACKAGE
 #' @name SGM
 #' @useDynLib SGM, .registration=TRUE
+#' @import Rcpp
+#' @importFrom doParallel registerDoParallel
+#' @importFrom foreach foreach
+#' @importFrom foreach "%dopar%"
+#' @importFrom mnormt rmnorm
 NULL

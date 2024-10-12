@@ -292,21 +292,6 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
 ## Goal: Select model via eBIC and provide bootstrap goodness of fit
 ########
 
-#############
-##### goodness of fit by parametric bootsrap
-bootstrap.like <- function(L, theta0, theta1, n, rep.boot=1000){
-  ## Generate bootstrap samples
-  temp = GenData.L2(n, theta0, theta1, L, rep.boot)
-  data.boot = temp$data # Extract datasets 
-  loglike.boot = rep(NA, rep.boot)
-  for (i in 1:rep.boot){
-    S.c = var(data.boot[[i]])*(n-1)/n
-    loglike.boot[i] = LogLike(S.c, theta0, theta1, L, n)
-  }
-  
-  return(loglike.boot)
-}
-
 ####################################
 ## eBIC and log-likelihood selection
 ######
@@ -330,7 +315,7 @@ bootstrap.like <- function(L, theta0, theta1, n, rep.boot=1000){
 #' * `goodness.fit` Results for a goodness of fit test (valid for n >= p)
 #' 
 #' @export
-model_selec = function(resultList, n, step = 3, model = "LN", select = "eBIC"){
+model_selec = function(resultList, n, step = 3, model = "LN"){
   
   ## extract p, n, and results
   S = resultList$S
@@ -442,62 +427,21 @@ model_selec = function(resultList, n, step = 3, model = "LN", select = "eBIC"){
   ## Select the optimal lambda, net.thre, according to desired threshold
   ####################
   
-  if (select == "eBIC"){
-    ## Select optimal index, depending on which steps used
-    if(step == 2){
-      ## Step 2a: post estimator selection results 
-      index.c=which.min(ebic.post)
-      index.c = arrayInd(index.c, .dim = dim(ebic.post))
-    }
-    
-    if(step == 3){
-      ## Step 3a: 0S estimator selection results 
-      index.c = which.min(ebic.0S)
-      index.c = arrayInd(index.c, .dim = dim(ebic.0S))
-      
-    }
-    
+  
+  ## Select optimal index, depending on which steps used
+  if(step == 2){
+    ## Step 2a: post estimator selection results 
+    index.c=which.min(ebic.post)
+    index.c = arrayInd(index.c, .dim = dim(ebic.post))
   }
-  if(select == "loglike"){# Use log-likelihood otherwise
-    if (step==2){
-      ## Step 2a
-      index.c = which(log.post.like == max(log.post.like, na.rm = T), arr.ind = T)
-      if (nrow(index.c)>1){
-        index.c = index.c[1, ]
-      }
-    }
     
-    if (step==3){
-      ## Step 3a
-      index.c = which(log.0S.like == max(log.0S.like, na.rm = T), arr.ind = T)
-      if (nrow(index.c)>1){
-        index.c = index.c[1, ]
-      }
-    }
+  if(step == 3){
+    ## Step 3a: 0S estimator selection results 
+    index.c = which.min(ebic.0S)
+    index.c = arrayInd(index.c, .dim = dim(ebic.0S))
+    
   }
   
-  #########################
-  ## Parametric bootstrap: goodness of fit
-  #########################
-  if (step==2){
-    resultOptimal = result.post[[index.c[1]]][[index.c[2]]]
-    theta0.est = theta0.ini
-    theta1.est = resultOptimal$theta1
-    L.est = resultOptimal$L
-    loglike.boot = bootstrap.like(L.est, theta0.est, theta1.est, n, rep.boot = 100) # generate 100 bootstrap samples and calculate log-likelihood
-    loglike.post.comp = mean(log.0S.like[index.c] > loglike.boot)
-    A.0.net.opt  = A.0.net[[index.c[1]]][[index.c[2]]]
-  }
-  else{
-    ## extract indexes for optimal model
-    resultOptimal = result.0S[[index.c[1]]][[index.c[2]]]
-    theta0.est = resultOptimal$theta0
-    theta1.est = resultOptimal$theta1
-    L.est = resultOptimal$L
-    loglike.boot = bootstrap.like(L.est, theta0.est, theta1.est, n, rep.boot = 100) # generate 100 bootstrap samples and calculate log-likelihood
-    loglike.post.comp = mean(log.0S.like[index.c] > loglike.boot)
-    A.0.net.opt  = A.0.net[[index.c[1]]][[index.c[2]]]
-  }
   
   ############################
   ## Return the optimal lambda, net.thre, and goodness of fit test

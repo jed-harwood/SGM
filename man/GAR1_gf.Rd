@@ -13,10 +13,13 @@ GAR1_gf(
   eps_abs = 1e-05,
   eps_rel = 0.001,
   max_iter = 10000,
-  num.thread = 1
+  num.thread = 1,
+  rep.boot = 100
 )
 }
 \arguments{
+\item{rep.boot}{Number of bootstrap samples to generate for test.}
+
 \item{`S`}{Estimate for covariance matrix, such as the MLE}
 
 \item{`nobs`}{The number of observations used to calculate \code{S}}
