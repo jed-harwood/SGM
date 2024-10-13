@@ -7,7 +7,7 @@
 #' 
 #' @docType data
 #' 
-#' @usage data(stocks) 
+#' @usage data("stocks") 
 #' 
 #' @references Peng et al. 2024
 #' 

@@ -11,7 +11,7 @@ A 283 by 1007 matrix
 TBD
 }
 \usage{
-data(stocks)
+data("stocks")
 }
 \description{
 A matrix with Stock Data from the S&P 500.

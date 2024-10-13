@@ -311,8 +311,8 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
 #' @returns A list object
 #' * model.selec A list containing the model with the model chosen by the eBIC criterion.
 #' * A.net.e A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
-#' * index Index for the eBIC-selected model.
-#' * goodness.fit Results for a goodness of fit test (valid for n >= p)
+#' * index Index for the optimal tuning parameters (lambda, net.thre) for the eBIC-selected model.
+#' * ebic ebic score for the selected model
 #' 
 #' @export
 model_selec = function(resultList, n, step = 3, model = "LN"){
@@ -411,8 +411,8 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
           log.0S.like[j,k]=LogLike(S, theta0.e, theta1.e, L.est, n)
           
           ## Calculate BIC and eBIC
-          if(model == "LN"||model=="LN.noloop"){## LN models have additional p parameters accounting for the estimated v0
-            bic.0S[j,k]=BIC(log.0S.like[j,k], n, net.size.c+1+p)
+          if(model == "LN"||model=="LN.noloop"){## LN models have additional p parameters accounting for the estimated v0, but we do not count it
+            bic.0S[j,k]=BIC(log.0S.like[j,k], n, net.size.c+1)
           }else{
             bic.0S[j,k]=BIC(log.0S.like[j,k], n, net.size.c+1)
           }
@@ -433,20 +433,27 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
     ## Step 2a: post estimator selection results 
     index.c=which.min(ebic.post)
     index.c = arrayInd(index.c, .dim = dim(ebic.post))
+    
+    resultOptimal = result.post[[index.c[1]]][[index.c[2]]]
+    A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
+    ebic.opt = ebic.post[index.c]
   }
     
   if(step == 3){
     ## Step 3a: 0S estimator selection results 
     index.c = which.min(ebic.0S)
     index.c = arrayInd(index.c, .dim = dim(ebic.0S))
-    
+    resultOptimal = result.0S[[index.c[1]]][[index.c[2]]]
+    A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
+    ebic.opt = ebic.0S[index.c]
   }
   
   
   ############################
   ## Return the optimal lambda, net.thre, and goodness of fit test
   ###########################
-  
-  retList = list("model.selec" = resultOptimal, "A.net.e" = A.0.net.opt, "index" = index.c, "goodness.fit" = loglike.post.comp)
+  colnames(index.c) = c("lambda", "net.thre")
+  rownames(index.c) = "index"
+  retList = list("model.selec" = resultOptimal, "A.net.e" = A.0.net.opt, "ebic" = ebic.opt, "index" = index.c)
   return(retList)
 }

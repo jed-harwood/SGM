@@ -1,0 +1,117 @@
+#' Example dataset: gar1
+#' 
+#' @format A 100 by 100 matrix
+#' 
+#' @description
+#' A matrix simulated from an underlying GAR(1) model, with theta0=1, theta1=2, and edge probability of 0.02.   
+#' 
+#' @docType data
+#' 
+#' @usage data("gar1") 
+#' 
+#' @references Peng et al. 2024
+#' 
+#' 
+#' 
+#' @source
+#' ```
+#' ##### generate random adjacency matrix:  ### 2024/5/12: add a self-loop probability argument  
+#' ##### generate edge connection according to a prob; generate weights uniformly from [min,max];
+#' Rand.Graph<-function(p,edge.prob, self.prob=edge.prob, min=0.1, max=1, selfloop=FALSE, isolate=FALSE){
+#'  ## p: number of nodes 
+#'  ## edge.prob: probability of edge connection
+#'  ## min: minimum nonzero weights, max : maximum weights 
+#'  ## selfloop: if false, then diagonal must be zero
+#'  ## isolate: if false, then each node has to have at least one edge 
+#'  ## return: an adjacent matrix: A = t(A), all entries >=0
+#'  A = matrix(0, p,p)
+#'  A[upper.tri(A)] = runif(p*(p-1)/2, min=min, max=max)*sample(0:1,p*(p-1)/2,replace=TRUE,prob=c(1-edge.prob, edge.prob))
+#'  A= A+t(A)
+#'  
+#'  if(selfloop){
+#'    diag(A)=runif(p, min=min, max=max)*sample(0:1,p,replace=TRUE,prob=c(1-self.prob, self.prob))
+#'  }
+#'  
+#'  if(!isolate){
+#'    deg=apply(A>0, 1, sum)
+#'    for (i in 1:(p-1)){
+#'      if(deg[i]==0){
+#'        j=sample((i+1):p,1)
+#'        A[i,j]=runif(1, min=min, max=max)
+#'        A[j,i]=A[i,j]
+#'        deg[j]=1
+#'      }
+#'    }
+#'  }
+#'  
+#'  return(A)
+#'}
+#'
+#'
+#' Laplacian.Norm<-function(A){
+#' ## A: p by p adjacency matrix
+#' ## return: normalized Laplacian: L = I-D^{-1/2}AD^{-1/2} 
+#' p=nrow(A)
+#' deg=apply(A, 1, sum)
+#'
+#' L.norm=matrix(0,p,p)
+#' 
+#' for (i in 1:p){
+#'   if(deg[i]>0){
+#'     L.norm[i,i]=1-A[i,i]/deg[i]
+#'   }
+#'   
+#'   for (j in 1:p){
+#'     if((j!=i)&&deg[j]>0&&A[i,j]>0) L.norm[i,j]=-A[i,j]/sqrt(deg[i]*deg[j]) ## updated: 2024/5/12
+#'   }
+#'   
+#' }
+#'
+#' 
+#' return(L.norm)
+#' }
+#'
+#'
+#'
+#' 
+#' set.seed(1)
+#' edge.prob=2/p
+#' p=100
+#' n=100
+#' rep=1
+#' model="LN" ##fit the general normalized Laplacian model 
+#' theta0=1
+#' theta1=2
+#' A.tr=Rand.Graph(p=p,edge.prob=edge.prob, self.prob=2*edge.prob, min=0.5, max=1, selfloop=FALSE, isolate=FALSE)
+#' net.tr=(A.tr>0)
+#' diag(net.tr)=0
+#' deg=apply(A.tr,1,sum)
+#' summary(deg)
+#' LN=Laplacian.Norm(A.tr) ##normalized Laplacian
+#' 
+#' ###### generate data according to GAR(1) model: Simga^{-1}=Omega=(theta0+theta1*L)^2
+#' GenData.L2<-function(n,theta0,theta1, L, rep=1){
+#'   ##n: sample size
+#'   ## theta0>0, theta1>0
+#'   ##L: (normalized)  Laplacian, p by p matrix 
+#'   ## rep: number of replicates 
+#'   ## return: list of n by p data matrices; p by p concentration matrix: Omega; p by p covariance matrix: Sigma
+#'  
+#'   library(mnormt)
+#'   data.rep=NULL
+#'   
+#'   p=nrow(L)
+#'   Omega=(theta0*diag(1,p)+theta1*L)%*%(theta0*diag(1,p)+theta1*L)
+#'   Sigma=solve(Omega)
+#'  
+#'   for (i in 1:rep){
+#'     data=rmnorm(n, mean=rep(0,p), varcov=Sigma)
+#'     data.rep[[i]]=data
+#'   }
+#'   
+#'   return(list(data=data.rep, Omega=Omega, Sigma=Sigma))  
+#' }
+#'
+#'  temp=GenData.L2(n,theta0,theta1,LN, rep)
+#'  ```
+"gar1"
