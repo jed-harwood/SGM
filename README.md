@@ -40,10 +40,11 @@ Please report any bugs to `jedharwood@ucdavis.edu`
 
 *** 
 
-## Example
+## Examples
 
 For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, run `?GAR1_gf`, `?GAR1_fit` and `?model_selec` in R.  
 
+### Using `stocks`
 ```
 data("stocks")
 n=nrow(stocks)
@@ -62,9 +63,39 @@ net.thre=C.thre*sqrt(log(p)/n)
 S = var(stocks)*(n-1)/n
 GAR1_gf(S, n, lambda.v[1])
 
-### Run GAR1_fit
+### Run GAR1_fit (up to step 3)
 resList = GAR1_fit(S, n, lambda.v, net.thre, model)
 
 ### Conduct model selection via eBIC
 optModel = model_sele(resList, n, step = 3, model = "LN")
+```
+
+
+### Using `gar1`
+```
+data("gar1")
+n = nrow(gar1)
+p = ncol(gar1)
+model = "LN"
+
+### lambda and net.thre sequence
+C.v=c(1,0.5)  
+lambda.v=C.v*sqrt(log(p)/n)
+
+C.thre=exp(seq(log(1),log(0.05), length.out=10))
+net.thre=C.thre*sqrt(log(p)/n)
+
+### ADMM parameter 
+rho.v=pmax(lambda.v, 0.01)
+
+### Fit GAR(1) (up to step 3)
+S = var(gar1)*(n-1)/n
+fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
+
+### Model selection via eBIC
+optGAR1 = model_selec(fit, n, step = 2, model)
+
+### Summarize Errors for true theta0, theta1
+
+
 ```
