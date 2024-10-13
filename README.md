@@ -28,10 +28,12 @@ install_github(repo="jed-harwood/SGM")
 
 `model_selec`: conduct model selection via the eBIC criterion
 
+***
+
 ## Data
 To load a dataset into the working environment, run `data("<dataname>")`.  For more information on a given dataset, please run `?<dataname>`.  
 
-`stocks`: Data on the S&P 500 stock information
+`stocks`: Data on the S&P 500 stock prices
 
 `gar1`:  Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices. 
 
