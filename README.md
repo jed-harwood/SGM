@@ -21,10 +21,19 @@ install_github(repo="jed-harwood/SGM")
 ```
 
 ## Main Functions
+
+`GAR1_gf`: run a goodness of fit test to determine if GAR(1) is appropriate. Valid for n >= p.
+
 `GAR1_fit`: learn a GAR(1) SGM for a given set of tuning parameters
 
 `model_selec`: conduct model selection via the eBIC criterion
 
+## Data
+To load a dataset into the working environment, run `data("<dataname>")`.  For more information on a given dataset, please run `?<dataname>`.  
+
+`stocks`: Data on the S&P 500 stock information
+
+`gar1`:  Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices. 
 
 ## Contact
 Please report any bugs to `jedharwood@ucdavis.edu`
@@ -33,7 +42,7 @@ Please report any bugs to `jedharwood@ucdavis.edu`
 
 ## Example
 
-For more information on the `GAR1_fit` and `model_selec` functions, run `?GAR1_fit` and `?model_selec` in R.  
+For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, run `?GAR1_gf`, `?GAR1_fit` and `?model_selec` in R.  
 
 ```
 data("stocks")
