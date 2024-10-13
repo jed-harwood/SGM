@@ -37,9 +37,6 @@ To load a dataset into the working environment, run `data("<dataname>")`.  For m
 
 `gar1`:  Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices. 
 
-## Contact
-Please report any bugs to `jedharwood@ucdavis.edu`
-
 *** 
 
 ## Examples
@@ -134,3 +131,8 @@ c(Power.2, Power.3) # Power
 c(FDR.2, FDR.3) # FDR 
 
 ```
+
+***
+
+## Contact
+Please report any bugs to `jedharwood@ucdavis.edu`
