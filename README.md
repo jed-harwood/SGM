@@ -80,6 +80,20 @@ n = nrow(gar1)
 p = ncol(gar1)
 model = "LN"
 
+
+### ground truth (see ?gar1 for more information)
+theta0.tr = 1
+theta1.tr = 2
+edge.prob = 2/p
+set.seed(1)
+A.tr=Rand.Graph(p=p,edge.prob=edge.prob, self.prob=2*edge.prob, min=0.5, max=1, selfloop=FALSE, isolate=FALSE)
+net.tr=(A.tr>0)
+diag(net.tr)=0
+deg=apply(A.tr,1,sum)
+summary(deg)
+L=Laplacian(A.tr)  ##Laplacian
+LN=Laplacian.Norm(A.tr) ##normalized Laplacian
+
 ### lambda and net.thre sequence
 C.v=c(1,0.5)  
 lambda.v=C.v*sqrt(log(p)/n)
@@ -94,10 +108,29 @@ rho.v=pmax(lambda.v, 0.01)
 S = var(gar1)*(n-1)/n
 fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
-### Model selection via eBIC
-optGAR1 = model_selec(fit, n, step = 2, model)
+### Model selection via eBIC (Step 2 and Step 3)
+fit.gar1.2 = model_selec(fit, n, step = 2, model)
+fit.gar1.3 = model_selec(fit, n, step = 3, model)
 
-### Summarize Errors for true theta0, theta1
+### Evaluate Estimation Errors for theta0, L, and FDR, Power
 
+theta0.err.2 = abs(fit.gar1.2$model.selec$theta0 - theta0.tr)^2
+theta0.err.3 = abs(fit.gar1.3$model.selec$theta0 - theta0.tr)^2
+
+L.err.2 = sum((fit.gar1.2$model.selec$L*fit.gar1.2$model.selec$theta1 - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
+L.err.3 = sum((fit.gar1.3$model.selec$L*fit.gar1.3$model.selec$theta1 - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
+
+FDR.2 = sum(fit.gar1.2$A.net.e*(1-A.tr))/sum(fit.gar1.2$A.net.e)
+FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)
+
+Power.2 = sum(fit.gar1.2$A.net.e*A.tr)/sum(A.tr)
+Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
+
+
+### View Errors
+c(theta0.err.2, theta0.err.3) # theta0 errors
+c(L.err.2, L.err.3) # L errors
+c(Power.2, Power.3) # Power
+c(FDR.2, FDR.3) # FDR 
 
 ```
