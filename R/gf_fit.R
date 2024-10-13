@@ -38,15 +38,15 @@ bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.b
 #' @description
 #' This function provides a goodness of fit test to see whether a GAR(1) model with the normalized laplacian is applicable.  It is valid for when the signal dimension is a most the number of observations available.
 #' 
-#' @param `S` Estimate for covariance matrix, such as the MLE
-#' @param `nobs` The number of observations used to calculate `S`
-#' @param `lambda.v` Tuning parameter for GAR(1).  Positive number.
-#' @param `rho.v` ADMM parameter.  Positive number.
-#' @param `eps_thre` Small positive number.
-#' @param `eps_abs` ADMM convergence criterion.
-#' @param `eps_rel` ADMM convergence criterion. 
-#' @param `max_iter` Number of iterations to run initial fit on observed data
-#' @param `num.threads` Number of threads to use for computing.
+#' @param S Estimate for covariance matrix, such as the MLE
+#' @param nobs The number of observations used to calculate `S`
+#' @param lambda.v Tuning parameter for GAR(1).  Positive number.
+#' @param rho.v ADMM parameter.  Positive number.
+#' @param eps_thre Small positive number.
+#' @param eps_abs ADMM convergence criterion.
+#' @param eps_rel ADMM convergence criterion. 
+#' @param max_iter Number of iterations to run initial fit on observed data
+#' @param num.threads Number of threads to use for computing.
 #' @param rep.boot Number of bootstrap samples to generate for test.
 #' 
 #' @returns p-value for the goodness of fit test 

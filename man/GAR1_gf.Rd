@@ -14,29 +14,30 @@ GAR1_gf(
   eps_rel = 0.001,
   max_iter = 10000,
   num.thread = 1,
-  rep.boot = 100
+  rep.boot = 100,
+  seed = 1
 )
 }
 \arguments{
+\item{S}{Estimate for covariance matrix, such as the MLE}
+
+\item{nobs}{The number of observations used to calculate \code{S}}
+
+\item{lambda.v}{Tuning parameter for GAR(1).  Positive number.}
+
+\item{rho.v}{ADMM parameter.  Positive number.}
+
+\item{eps_thre}{Small positive number.}
+
+\item{eps_abs}{ADMM convergence criterion.}
+
+\item{eps_rel}{ADMM convergence criterion.}
+
+\item{max_iter}{Number of iterations to run initial fit on observed data}
+
 \item{rep.boot}{Number of bootstrap samples to generate for test.}
 
-\item{`S`}{Estimate for covariance matrix, such as the MLE}
-
-\item{`nobs`}{The number of observations used to calculate \code{S}}
-
-\item{`lambda.v`}{Tuning parameter for GAR(1).  Positive number.}
-
-\item{`rho.v`}{ADMM parameter.  Positive number.}
-
-\item{`eps_thre`}{Small positive number.}
-
-\item{`eps_abs`}{ADMM convergence criterion.}
-
-\item{`eps_rel`}{ADMM convergence criterion.}
-
-\item{`max_iter`}{Number of iterations to run initial fit on observed data}
-
-\item{`num.threads`}{Number of threads to use for computing.}
+\item{num.threads}{Number of threads to use for computing.}
 }
 \value{
 p-value for the goodness of fit test

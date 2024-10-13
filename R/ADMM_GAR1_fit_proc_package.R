@@ -225,20 +225,20 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' @description
 #' `GAR1_fit` performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters `theta0` and `theta`, and the normalized graph Laplacian `L`.  
 #' 
-#' @param `S` An estimate of the covariance matrix, such as the MLE.
-#' @param `nobs` The number of samples used to calculate `S`
-#' @param `lambda.v` Tuning parameter to control sparsity of the estimated graph
-#' @param `net.thre` Tuning parameter to control noisy entries in estimated graph
-#' @param `model`
-#' * `"LN"` Fits a normalized graph Laplacian
-#' * `"L"` Fits a graph Laplacian
-#' * `"LN.noselfloop"` Fits a normalized graph laplacian assuming no self-loops.
-#' @param `step` How many steps of the estimation procedure you want to run. Either 2 or 3.
-#' @param `rho.v` ADMM parameter (typically equal to `lambda.v`)
-#' @param `eps_thre` Small positive number
-#' @param `eps_abs` ADMM convergence criterion
-#' @param `eps_rel` ADMM convergence criterion
-#' @param `max_iter_1`, `max_iter_2`, `max_iter_3a`Maximum number of iterations for algorithm
+#' @param S An estimate of the covariance matrix, such as the MLE.
+#' @param nobs The number of samples used to calculate `S`
+#' @param lambda.v Tuning parameter to control sparsity of the estimated graph
+#' @param net.thre Tuning parameter to control noisy entries in estimated graph
+#' @param model
+#' * "LN" Fits a normalized graph Laplacian
+#' * "L" Fits a graph Laplacian
+#' * "LN.noselfloop" Fits a normalized graph laplacian assuming no self-loops.
+#' @param step How many steps of the estimation procedure you want to run. Either 2 or 3.
+#' @param rho.v ADMM parameter (typically equal to `lambda.v`)
+#' @param eps_thre Small positive number
+#' @param eps_abs ADMM convergence criterion
+#' @param eps_rel ADMM convergence criterion
+#' @param max_iter_1, max_iter_2, max_iter_3a Maximum number of iterations for algorithm
 #' 
 #' @returns
 #' A list object
@@ -300,19 +300,19 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
 #' @description
 #' Given a list of models, uses eBIC criterion to select the appropriate tuning parameters for GAR(1) and conducts a goodness of fit test.
 #' 
-#' @param `resultList` A list output from `GAR1_fit`
-#' @param `n` An integer referring to the number of observations
-#' @param `step` 2 or 3; How many steps were used to fit the model.
-#' @param `model` Which model to consider
-#' * `"LN"` Normalized graph Laplacian
-#' * `"L"` Graph Laplacian
-#' * `"LN.noselfloop"` Normalized graph Laplacian without self-loops. 
+#' @param resultList A list output from `GAR1_fit`
+#' @param n An integer referring to the number of observations
+#' @param step 2 or 3; How many steps were used to fit the model.
+#' @param model Which model to consider
+#' * "LN" Normalized graph Laplacian
+#' * "L" Graph Laplacian
+#' * "LN.noselfloop" Normalized graph Laplacian without self-loops. 
 #' 
 #' @returns A list object
-#' * `model.selec` A list containing the model with the model chosen by the eBIC criterion.
-#' * `A.net.e` A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
-#' * `index` Index for the eBIC-selected model.
-#' * `goodness.fit` Results for a goodness of fit test (valid for n >= p)
+#' * model.selec A list containing the model with the model chosen by the eBIC criterion.
+#' * A.net.e A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
+#' * index Index for the eBIC-selected model.
+#' * goodness.fit Results for a goodness of fit test (valid for n >= p)
 #' 
 #' @export
 model_selec = function(resultList, n, step = 3, model = "LN"){
