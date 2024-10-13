@@ -47,9 +47,15 @@ lambda.v=C.v*sqrt(log(p)/n)
 rho.v=pmax(lambda.v, 0.01)
 
 C.thre=exp(seq(log(1),log(0.1), length.out=12))
-net.thre=C.thre*sqrt(log(p)/n) 
+net.thre=C.thre*sqrt(log(p)/n)
+
+### Determine if GAR(1) model is appropriate
+S = var(stocks)*(n-1)/n
+GAR1_gf(S, n, lambda.v[1])
 
 ### Run GAR1_fit
-S = var(stocks)*(n-1)/n
-resList = GAR1_fit(S, n, lambda.v, net.thre, model) 
+resList = GAR1_fit(S, n, lambda.v, net.thre, model)
+
+### Conduct model selection via eBIC
+optModel = model_sele(resList, n, step = 3, model = "LN")
 ```
