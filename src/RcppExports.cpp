@@ -11,6 +11,40 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// ADMM_Deg
+Rcpp::List ADMM_Deg(const Rcpp::NumericMatrix& s, double rho, double epsilon, double eps_abs, double eps_rel, int max_iter, bool verbose);
+RcppExport SEXP _SGM_ADMM_Deg(SEXP sSEXP, SEXP rhoSEXP, SEXP epsilonSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP max_iterSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type s(sSEXP);
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
+    Rcpp::traits::input_parameter< double >::type eps_abs(eps_absSEXP);
+    Rcpp::traits::input_parameter< double >::type eps_rel(eps_relSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(ADMM_Deg(s, rho, epsilon, eps_abs, eps_rel, max_iter, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
+// ADMM_Deg_L
+Rcpp::List ADMM_Deg_L(const Rcpp::NumericMatrix& L, double rho, double epsilon, double eps_abs, double eps_rel, int max_iter, bool verbose);
+RcppExport SEXP _SGM_ADMM_Deg_L(SEXP LSEXP, SEXP rhoSEXP, SEXP epsilonSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP max_iterSEXP, SEXP verboseSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const Rcpp::NumericMatrix& >::type L(LSEXP);
+    Rcpp::traits::input_parameter< double >::type rho(rhoSEXP);
+    Rcpp::traits::input_parameter< double >::type epsilon(epsilonSEXP);
+    Rcpp::traits::input_parameter< double >::type eps_abs(eps_absSEXP);
+    Rcpp::traits::input_parameter< double >::type eps_rel(eps_relSEXP);
+    Rcpp::traits::input_parameter< int >::type max_iter(max_iterSEXP);
+    Rcpp::traits::input_parameter< bool >::type verbose(verboseSEXP);
+    rcpp_result_gen = Rcpp::wrap(ADMM_Deg_L(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ADMM_L2
 List ADMM_L2(const Rcpp::NumericMatrix& s, double theta0, Rcpp::NumericVector& v, double rho, double lambda, std::string model, const Rcpp::NumericMatrix& Z_ini, const Rcpp::NumericMatrix& W_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose);
 RcppExport SEXP _SGM_ADMM_L2(SEXP sSEXP, SEXP theta0SEXP, SEXP vSEXP, SEXP rhoSEXP, SEXP lambdaSEXP, SEXP modelSEXP, SEXP Z_iniSEXP, SEXP W_iniSEXP, SEXP eps_threSEXP, SEXP eps_absSEXP, SEXP eps_relSEXP, SEXP max_iterSEXP, SEXP verboseSEXP) {
@@ -133,6 +167,8 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_SGM_ADMM_Deg", (DL_FUNC) &_SGM_ADMM_Deg, 7},
+    {"_SGM_ADMM_Deg_L", (DL_FUNC) &_SGM_ADMM_Deg_L, 7},
     {"_SGM_ADMM_L2", (DL_FUNC) &_SGM_ADMM_L2, 13},
     {"_SGM_ADMM_L2_Zero", (DL_FUNC) &_SGM_ADMM_L2_Zero, 13},
     {"_SGM_ADMM_L2_seq", (DL_FUNC) &_SGM_ADMM_L2_seq, 12},

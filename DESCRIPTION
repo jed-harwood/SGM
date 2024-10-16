@@ -13,7 +13,7 @@ Imports:
   foreach (>= 1.2.0),
   gmp (>= 0.7-4),
   mnormt (>= 2.1.1)
-LinkingTo: Rcpp, RcppEigen
+LinkingTo: Rcpp, RcppEigen, BH
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
