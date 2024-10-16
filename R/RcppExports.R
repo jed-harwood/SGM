@@ -5,6 +5,25 @@ ADMM_Deg <- function(s, rho, epsilon, eps_abs, eps_rel, max_iter, verbose) {
     .Call(`_SGM_ADMM_Deg`, s, rho, epsilon, eps_abs, eps_rel, max_iter, verbose)
 }
 
+#' ADMM for Degree estimation
+#' 
+#' Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.
+#' 
+#' @param L A  p by p (normalized) graph laplacian
+#' @param rho ADMM parameter (positive number)
+#' @param epsilon small positive number
+#' @param eps_abs ADMM stopping criterion
+#' @param eps_rel ADMM stopping criterion
+#' @param max_iter Maximum number of iterations
+#' @param verbose Trace of algorithm
+#' 
+#' @returns A list object
+#' * `v` A length p vector
+#' * `w` A length p vector
+#' * `deg` A length p vector
+#' * `conv` A boolean indicating convergence
+#' 
+#' @export
 ADMM_Deg_L <- function(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose) {
     .Call(`_SGM_ADMM_Deg_L`, L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose)
 }

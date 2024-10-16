@@ -25,8 +25,8 @@ A list object
 \itemize{
 \item model.selec A list containing the model with the model chosen by the eBIC criterion.
 \item A.net.e A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
-\item index Index for the eBIC-selected model.
-\item goodness.fit Results for a goodness of fit test (valid for n >= p)
+\item index Index for the optimal tuning parameters (lambda, net.thre) for the eBIC-selected model.
+\item ebic ebic score for the selected model
 }
 }
 \description{
