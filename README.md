@@ -25,7 +25,7 @@ install_github(repo="jed-harwood/SGM")
 `GAR1_gf`: run a goodness of fit test to determine if GAR(1) is appropriate. Valid for n >= p.
 
 `GAR1_fit`: learn a GAR(1) SGM for a given set of tuning parameters, using a 3 step estimation procedure based on a penalized MLE.  
-* Step 1: Given an initial estimate (`S`) for the covariance matrix, uses an ADMM algorithm to estimate the (normalized) graph Laplacian, based on an initial estimate for `theta0`.  The initial estimate for `theta0` is the reciprocal of the largest eigenvalue of `S`.
+* Step 1: Given an initial estimate (`S`) for the covariance matrix, uses an ADMM algorithm to estimate the (normalized) graph Laplacian, based on an initial estimate for `theta0`.  The initial estimate for `theta0` is the reciprocal of the largest eigenvalue of `S`, squared.
 * Step 2: Given the zero-pattern in the Laplacian from Step 1, uses an ADMM algorithm to refit the off-diagonal elements of the (normalized) graph Laplacian.
 * Step 3:
     1. Given the (normalized) graph Laplacian from Step 2, uses an ADMM algorithm to estimate the degree vector `v0`.
