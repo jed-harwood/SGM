@@ -112,7 +112,12 @@ GenData.L2<-function(n,theta0,theta1, L, rep=1)\{
 data("gar1")
 }
 \description{
-A matrix simulated from an underlying GAR(1) model, with theta0=1, theta1=2, and edge probability of 0.02.
+A list object containing:
+\itemize{
+\item \code{data}: A 100 by 100 matrix with data simulated from an underlying GAR(1) model, with theta0=1, theta1=2, and a random-graph with edge probability of 0.02.
+\item \code{A.tr}: The true adjacency matrix (100 by 100)
+\item \code{LN}: The true normalized Laplacian matrix  (100 by 100)
+}
 }
 \references{
 Peng et al. 2024
