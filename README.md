@@ -40,7 +40,10 @@ To load a dataset into the working environment, run `data("<dataname>")`.  For m
 
 `stocks`: Data on the S&P 500 stock prices
 
-`gar1`:  Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices. 
+`gar1`:  A list object that contains:
+1. `data`: Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices.
+2. `A.tr`: The true adjacency matrix.
+3. `LN`: The true (normalized) graph Laplacian
 
 *** 
 
