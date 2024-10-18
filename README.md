@@ -40,7 +40,10 @@ To load a dataset into the working environment, run `data("<dataname>")`.  For m
 
 `stocks`: Data on the S&P 500 stock prices
 
-`gar1`:  Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices. 
+`gar1`:  A list object that contains:
+1. `data`: Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices.
+2. `A.tr`: The true adjacency matrix.
+3. `LN`: The true (normalized) graph Laplacian
 
 *** 
 
@@ -77,24 +80,18 @@ optModel = model_sele(resList, n, step = 3, model = "LN")
 
 ### Using `gar1`
 ```
+### ground truth (see ?gar1 for more information)
 data("gar1")
+A.tr = gar1$A.tr # True adjacency matrix
+LN = gar1$LN # True (normalized) graph Laplacian
+gar1 = gar1$data # Simulated data
+theta0.tr = 1 
+theta1.tr = 2
+
+### extract p and n
 n = nrow(gar1)
 p = ncol(gar1)
 model = "LN"
-
-
-### ground truth (see ?gar1 for more information)
-theta0.tr = 1
-theta1.tr = 2
-edge.prob = 2/p
-set.seed(1)
-A.tr=Rand.Graph(p=p,edge.prob=edge.prob, self.prob=2*edge.prob, min=0.5, max=1, selfloop=FALSE, isolate=FALSE)
-net.tr=(A.tr>0)
-diag(net.tr)=0
-deg=apply(A.tr,1,sum)
-summary(deg)
-L=Laplacian(A.tr)  ##Laplacian
-LN=Laplacian.Norm(A.tr) ##normalized Laplacian
 
 ### lambda and net.thre sequence
 C.v=c(1,0.5)  
