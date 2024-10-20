@@ -265,9 +265,14 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
   step1a = fit_step_1a(step0a, lambda.v, rho.v, model, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
   print("Step 1a complete")
   
-  ## Using 0-pattern, re-estimate non-zero elements in L
-  step2a = fit_step_2a(step0a, step1a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
-  print("Step 2a complete")
+  if (step >= 2){
+    ## Using 0-pattern, re-estimate non-zero elements in L
+    step2a = fit_step_2a(step0a, step1a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
+    print("Step 2a complete")
+  }
+  else{
+    step2a = NULL
+  }
   
   if (step == 3){
     ## Use estimated L to estimate degree vector, then simultaneously re-estimate L and theta0
