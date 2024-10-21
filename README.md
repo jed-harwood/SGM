@@ -113,10 +113,11 @@ rho.v=pmax(lambda.v, 0.01)
 
 ### Get sample covariance 
 S = var(gar1_data)*(n-1)/n
+
 ### Fit GAR(1) (up to step 3)
 fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
-### Model selection via eBIC (Step 2 and Step 3)
+### Model selection via eBIC for Step 2 estimator and Step 3 estimator
 fit.gar1.2 = model_selec(fit, n, step = 2, model)
 gar1_fitted.2 = fit.gar1.2$model.selec
 
