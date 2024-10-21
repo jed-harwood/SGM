@@ -2,7 +2,7 @@
 An R package for Estimating Spectral Graphical Models
 
 *** 
-The R package `SGM` provides a set of functions that learn a latent graph from the data.  The data are viewed as stationary signals from the inferred latent graph.  `SGM` is motivated by the need to understand complex dependence structures, and how they change over time.  Currently, the package offers code to fit a GAR(1) model (as proposed by Peng et al.) through a 3-step procedure.
+The R package `SGM` provides a set of functions that learn a latent graph from the data which are modelled as stationary signals on the latent graph.  Currently, the package offers code to fit a `GAR(1)` model through a 3-step procedure.
 
 *** 
 
@@ -22,28 +22,29 @@ install_github(repo="jed-harwood/SGM")
 
 ## Main Functions
 
-`GAR1_gf`: run a goodness of fit test to determine if GAR(1) is appropriate. Valid for n >= p.  Return a value between 0 and 1. If the returned value is close to 1, then it means that the GAR(1) model is a good fit to the data.
+`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for n >= p.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
-`GAR1_fit`: learn a GAR(1) SGM for a given set of tuning parameters, using a 3 step estimation procedure based on a penalized MLE.  
-* Step 1: given an initial estimate (`S`) for the covariance matrix (e.g., by the sample covariance matrix) and an initial estimate for `theta0`, uses an ADMM algorithm to estimate the (normalized) graph Laplacian.  The initial estimate for `theta0` is the reciprocal of the largest eigenvalue of `S`, squared.
-* Step 2: given the zero-pattern in the Laplacian from Step 1, uses an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian.
+`GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
+* Step 1: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix) and an initial estimate for `theta0` (the reciprocal of the largest eigenvalue of `S`, squared.), use an ADMM algorithm to estimate the (normalized) graph Laplacian of the latent graph.  
+* Step 2: given the zero-pattern in the estimated (normalized) graph Laplacian obtained from Step 1, use an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian.
 * Step 3:
-    * a. given the (normalized) graph Laplacian from Step 2, uses an ADMM algorithm to estimate the normalized degree vector `v0`.
-    * b. given `v0` and the zero-pattern from Step 1, uses an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian.
+    * a. given the (normalized) graph Laplacian from Step 2, use an ADMM algorithm to estimate the normalized degree vector `v0`.
+    * b. given `v0` and the zero-pattern from Step 1, use an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian.
 
-`model_selec`: conduct model selection via the eBIC criterion
+`model_selec`: conduct model selection via the eBIC criterion.
 
 ***
 
 ## Data
 To load a dataset into the working environment, run `data("<dataname>")`.  For more information on a given dataset, please run `?<dataname>`.  
 
-`stocks`: Data on the S&P 500 stock prices
+`stocks`: Data on the S&P 500 stock prices.
 
 `gar1`:  A list object that contains:
-1. `data`: Simulated data that comes from an underlying GAR(1) model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated vertices.
+1. `data`: Simulated data that comes from an underlying `GAR(1)` model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated nodes.
 2. `A.tr`: The true adjacency matrix.
-3. `LN`: The true (normalized) graph Laplacian
+3. `LN`: The true (normalized) graph Laplacian.
+4. `theta0`, `theta1`: The true graph filter parameters.  
 
 *** 
 
@@ -51,7 +52,7 @@ To load a dataset into the working environment, run `data("<dataname>")`.  For m
 
 For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, run `?GAR1_gf`, `?GAR1_fit` and `?model_selec` in R.  
 
-### Using `stocks`
+### Fit `GAR(1)` to `stocks` data.
 ```
 data("stocks")
 n=nrow(stocks)
@@ -78,15 +79,17 @@ optModel = model_sele(resList, n, step = 3, model = "LN")
 ```
 
 
-### Using `gar1`
+### Fit `GAR(1)` to the simulated `gar1` data. 
 ```
 ### ground truth (see ?gar1 for more information)
 data("gar1")
 A.tr = gar1$A.tr # True adjacency matrix
 LN = gar1$LN # True (normalized) graph Laplacian
-gar1_data = gar1$data # Simulated data
 theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
+
+### data 
+gar1_data = gar1$data # Simulated data
 
 ### extract p and n
 n = nrow(gar1_data)
@@ -114,7 +117,7 @@ gar1_fitted.2 = fit.gar1.2$model.selec
 fit.gar1.3 = model_selec(fit, n, step = 3, model)
 gar1_fitted.3 = fit.gar1.3$model.selec
 
-### Evaluate Estimation Errors for theta0, L, and FDR, Power
+### Evaluate estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 
 theta0.err.2 = abs(gar1_fitted.2$theta0 - theta0.tr)^2
 theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
@@ -129,7 +132,7 @@ Power.2 = sum(fit.gar1.2$A.net.e*A.tr)/sum(A.tr)
 Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
 
 
-### View Errors
+### View performance
 c(theta0.err.2, theta0.err.3) # theta0 errors
 c(L.err.2, L.err.3) # L errors
 c(Power.2, Power.3) # Power
