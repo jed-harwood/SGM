@@ -126,7 +126,7 @@ gar1_fitted.3 = fit.gar1.3$model.selec
 
 ### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 ## Get ground truth
-A.tr = gar1$A.tr # True adjacency matrix
+A.tr = gar1$A.tr > 0 # True adjacency matrix
 LN = gar1$LN # True (normalized) graph Laplacian
 theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
@@ -135,8 +135,8 @@ theta1.tr = gar1$theta1 # True graph filter parameter
 theta0.err.2 = abs(gar1_fitted.2$theta0 - theta0.tr)^2
 theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
 
-L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
-L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
+L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
+L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
 
 ## Calculate FDR and Power 
 FDR.2 = sum(fit.gar1.2$A.net.e*(1-A.tr))/sum(fit.gar1.2$A.net.e)
