@@ -89,8 +89,8 @@ theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
 
 ### extract p and n
-n = nrow(gar1)
-p = ncol(gar1)
+n = nrow(gar1_data)
+p = ncol(gar1_data)
 model = "LN"
 
 ### lambda and net.thre sequence
@@ -104,7 +104,7 @@ net.thre=C.thre*sqrt(log(p)/n)
 rho.v=pmax(lambda.v, 0.01)
 
 ### Fit GAR(1) (up to step 3)
-S = var(gar1)*(n-1)/n
+S = var(gar1_data)*(n-1)/n
 fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
 ### Model selection via eBIC (Step 2 and Step 3)
@@ -134,7 +134,6 @@ c(theta0.err.2, theta0.err.3) # theta0 errors
 c(L.err.2, L.err.3) # L errors
 c(Power.2, Power.3) # Power
 c(FDR.2, FDR.3) # FDR 
-
 ```
 
 ***
