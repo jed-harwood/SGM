@@ -149,7 +149,13 @@ Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
 c(theta0.err.2, theta0.err.3) # theta0 errors
 c(L.err.2, L.err.3) # L errors
 c(Power.2, Power.3) # Power
-c(FDR.2, FDR.3) # FDR 
+c(FDR.2, FDR.3) # FDR
+
+## Results:
+## theta0: 0.06893404 0.00967012
+## L: 0.06785057 0.03833937
+## Power: 0.9187622 0.9350193
+## FDR: 0.2930108 0.2944717 
 ```
 
 ***
