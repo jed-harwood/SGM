@@ -40,7 +40,7 @@ install_github(repo="jed-harwood/SGM")
 ## Data
 To load a dataset into the working environment, run `data("<dataname>")`.  For more information on a given dataset, please run `?<dataname>`.  
 
-`stocks`: log-returns of $283$ S&P 500 stocks from January 1, 2007 to January 1, 2011, obtained via the R package `quantmod`. 
+`stocks`: (standardized) log-returns of $283$ S&P 500 stocks from January 1, 2007 to January 1, 2011, obtained via the R package `quantmod`. 
 
 `gar1`:  A list object that contains:
 1. `data`: data simulated under a `GAR(1)` model.
