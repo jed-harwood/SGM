@@ -25,11 +25,11 @@ install_github(repo="jed-harwood/SGM")
 `GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for $n \geq p$.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
 `GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
-* Step 1: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix) and an initial estimate for `theta0` (the reciprocal of the largest eigenvalue of `S`, squared.), use an ADMM algorithm to estimate the (normalized) graph Laplacian of the latent graph.  
+* Step 1: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix) and an initial estimate for `$theta_0$` (the reciprocal of the largest eigenvalue of `S`, squared.), use an ADMM algorithm to estimate the (normalized) graph Laplacian of the latent graph.  
 * Step 2: given the zero-pattern in the estimated (normalized) graph Laplacian obtained from Step 1, use an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian.
 * Step 3:
     * a. given the (normalized) graph Laplacian from Step 2, use an ADMM algorithm to estimate the normalized degree vector `v0`.
-    * b. given `v0` and the zero-pattern from Step 1, use an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian.
+    * b. given `v0` and the zero-pattern from Step 1, use an ADMM algorithm to simultaneously re-estimate `$theta_0$` and the (normalized) graph Laplacian.
 
 `model_selec`: conduct model selection via the eBIC criterion.
 
