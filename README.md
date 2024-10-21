@@ -57,20 +57,24 @@ For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, r
 data("stocks")
 n=nrow(stocks)
 p=ncol(stocks)
-model="LN"
 
-### tuning parameters: lambda and net.thre sequence
+### Set the model to fit: GAR(1)-normalized Laplacian model
+model="LN" 
+
+### Set tuning parameters: lambda and net.thre sequence
 C.v=c(8,4,1)
 lambda.v=C.v*sqrt(log(p)/n)
 
 C.thre=exp(seq(log(1),log(0.1), length.out=12))
 net.thre=C.thre*sqrt(log(p)/n)
 
-### ADMM parameter
+### Set ADMM parameter
 rho.v=pmax(lambda.v, 0.01)
 
-### Determine if GAR(1) model is appropriate
+### Calculate sample covariance
 S = var(stocks)*(n-1)/n
+
+### Determine if GAR(1) model is appropriate
 GAR1_gf(S, n, lambda.v[1])
 
 ### Run GAR1_fit (up to step 3)
@@ -83,33 +87,30 @@ optModel = model_sele(resList, n, step = 3, model = "LN")
 
 ### Fit `GAR(1)` to the simulated `gar1` data. 
 ```
-### ground truth (see ?gar1 for more information)
+### See ?gar1 for more information
 data("gar1")
-A.tr = gar1$A.tr # True adjacency matrix
-LN = gar1$LN # True (normalized) graph Laplacian
-theta0.tr = gar1$theta0 # True graph filter parameter
-theta1.tr = gar1$theta1 # True graph filter parameter
 
-### data 
+### Get data 
 gar1_data = gar1$data # Simulated data
-
-### extract p and n
 n = nrow(gar1_data)
 p = ncol(gar1_data)
+
+### Set model to fit
 model = "LN"
 
-### lambda and net.thre sequence
+### Set tuning parameters: lambda and net.thre sequence
 C.v=c(1,0.5)  
 lambda.v=C.v*sqrt(log(p)/n)
 
 C.thre=exp(seq(log(1),log(0.05), length.out=10))
 net.thre=C.thre*sqrt(log(p)/n)
 
-### ADMM parameter 
+### Set ADMM parameter 
 rho.v=pmax(lambda.v, 0.01)
 
-### Fit GAR(1) (up to step 3)
+### Get sample covariance 
 S = var(gar1_data)*(n-1)/n
+### Fit GAR(1) (up to step 3)
 fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
 ### Model selection via eBIC (Step 2 and Step 3)
@@ -121,20 +122,27 @@ gar1_fitted.3 = fit.gar1.3$model.selec
 
 ### Evaluate estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 
+## Get ground truth
+A.tr = gar1$A.tr # True adjacency matrix
+LN = gar1$LN # True (normalized) graph Laplacian
+theta0.tr = gar1$theta0 # True graph filter parameter
+theta1.tr = gar1$theta1 # True graph filter parameter
+
+## Calculate estimation errors
 theta0.err.2 = abs(gar1_fitted.2$theta0 - theta0.tr)^2
 theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
 
 L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
 L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
 
+## Calculate FDR and Power 
 FDR.2 = sum(fit.gar1.2$A.net.e*(1-A.tr))/sum(fit.gar1.2$A.net.e)
 FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)
 
 Power.2 = sum(fit.gar1.2$A.net.e*A.tr)/sum(A.tr)
 Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
 
-
-### View performance
+## View results 
 c(theta0.err.2, theta0.err.3) # theta0 errors
 c(L.err.2, L.err.3) # L errors
 c(Power.2, Power.3) # Power
