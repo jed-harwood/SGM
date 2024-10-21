@@ -38,13 +38,13 @@ install_github(repo="jed-harwood/SGM")
 ## Data
 To load a dataset into the working environment, run `data("<dataname>")`.  For more information on a given dataset, please run `?<dataname>`.  
 
-`stocks`: Data on the S&P 500 stock prices.
+`stocks`: log-returns of $283$ S&P 500 stocks from January 1, 2007 to January 1, 2011, obtained via the R package `quantmod`. 
 
 `gar1`:  A list object that contains:
-1. `data`: Simulated data that comes from an underlying `GAR(1)` model, generated to have a (latent) graph with edge probability `0.02`, graph filter parameters `theta0=1`, and `theta1=2`, with no self-loops nor isolated nodes.
-2. `A.tr`: The true adjacency matrix.
-3. `LN`: The true (normalized) graph Laplacian.
-4. `theta0`, `theta1`: The true graph filter parameters.  
+1. `data`: data simulated under a `GAR(1)` model.
+2. `A.tr`: the true adjacency matrix for the underlying graph.
+3. `LN`: the true normalized graph Laplacian matrix.
+4. `theta0`, `theta1`: the true graph filter parameters.  
 
 *** 
 
