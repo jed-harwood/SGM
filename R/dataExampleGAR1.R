@@ -7,6 +7,8 @@
 #' * `data`: A 100 by 100 matrix with data simulated from an underlying GAR(1) model, with theta0=1, theta1=2, and a random-graph with edge probability of 0.02. 
 #' * `A.tr`: The true adjacency matrix (100 by 100)
 #' * `LN`: The true normalized Laplacian matrix  (100 by 100)
+#' * `theta0`: The true value of `theta0`.  A positive number.
+#' * `theta1`: The true value of `theta1`. A positive number.
 #' 
 #' @docType data
 #' 
