@@ -94,7 +94,7 @@ optModel = model_sele(resList, n, step = 3, model = "LN")
 data("gar1")
 
 ### Get data 
-gar1_data = gar1$data # Simulated data
+gar1_data = gar1$data
 n = nrow(gar1_data)
 p = ncol(gar1_data)
 
