@@ -22,7 +22,7 @@ install_github(repo="jed-harwood/SGM")
 
 ## Main Functions
 
-`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for n >= p.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
+`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for $n \geq p$.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
 `GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
 * Step 1: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix) and an initial estimate for `theta0` (the reciprocal of the largest eigenvalue of `S`, squared.), use an ADMM algorithm to estimate the (normalized) graph Laplacian of the latent graph.  
