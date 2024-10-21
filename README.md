@@ -26,7 +26,7 @@ install_github(repo="jed-harwood/SGM")
 `GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for $n \geq p$.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
 `GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
-* Step 0: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix), obtain an initial estimate for `theta0` by the reciprocal of the largest eigenvalue of `S`, squared.
+* Step 0: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix), obtain an initial estimate for `theta0` by the reciprocal of the largest eigenvalue of `S`, square-rooted.
 * Step 1: given `S`  and `theta0` from Step 0, use an ADMM algorithm to estimate the (normalized) graph Laplacian `L` of the latent graph.  
 * Step 2: given the zero-pattern in `L` from Step 1, use an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian `L`.
 * Step 3:
@@ -126,7 +126,7 @@ gar1_fitted.3 = fit.gar1.3$model.selec
 
 ### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 ## Get ground truth
-A.tr = gar1$A.tr # True adjacency matrix
+A.tr = gar1$A.tr > 0 # True adjacency matrix
 LN = gar1$LN # True (normalized) graph Laplacian
 theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
@@ -135,8 +135,8 @@ theta1.tr = gar1$theta1 # True graph filter parameter
 theta0.err.2 = abs(gar1_fitted.2$theta0 - theta0.tr)^2
 theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
 
-L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
-L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
+L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
+L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
 
 ## Calculate FDR and Power 
 FDR.2 = sum(fit.gar1.2$A.net.e*(1-A.tr))/sum(fit.gar1.2$A.net.e)
@@ -152,10 +152,11 @@ c(Power.2, Power.3) # Power
 c(FDR.2, FDR.3) # FDR
 
 ## Results:
+## p=100; n=100; true network size = 105; 
 ## theta0: 0.06893404 0.00967012
-## L: 0.06785057 0.03833937
-## Power: 0.9187622 0.9350193
-## FDR: 0.2930108 0.2944717 
+## L: 0.03392529 0.01916969
+## Power: 0.9047619 0.9238095
+## FDR: 0.05940594 0.05825243
 ```
 
 ***
