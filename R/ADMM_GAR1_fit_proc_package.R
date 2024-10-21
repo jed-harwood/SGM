@@ -152,7 +152,7 @@ fit_step_3a_0 = function(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, v
       
       if(!is.null(result.c)&&result.c$conv){
         L.est = result.c$L
-        temp=try(ADMM.Deg.L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps.abs=1e-5, eps.rel=1e-3, max_iter=50000, verbose=FALSE))
+        temp=try(ADMM.Deg.L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps.abs=1e-5, eps.rel=1e-3, max.iter=50000, verbose=FALSE))
         
         if (inherits(temp, "try-error")){
           temp = list("v" = rep(0,p), "conv" = F)
