@@ -59,13 +59,15 @@ n=nrow(stocks)
 p=ncol(stocks)
 model="LN"
 
-### lambda and net.thre sequence
+### tuning parameters: lambda and net.thre sequence
 C.v=c(8,4,1)
-lambda.v=C.v*sqrt(log(p)/n) 
-rho.v=pmax(lambda.v, 0.01)
+lambda.v=C.v*sqrt(log(p)/n)
 
 C.thre=exp(seq(log(1),log(0.1), length.out=12))
 net.thre=C.thre*sqrt(log(p)/n)
+
+### ADMM parameter
+rho.v=pmax(lambda.v, 0.01)
 
 ### Determine if GAR(1) model is appropriate
 S = var(stocks)*(n-1)/n
