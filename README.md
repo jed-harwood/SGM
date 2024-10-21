@@ -2,7 +2,7 @@
 An R package for fitting Spectral Graph Models
 
 *** 
-The R package `SGM` provides a set of functions that learn a latent graph from the data through modeling the observations as stationary signals on this graph.  Currently, the package offers code to fit a `GAR(1)` model through a 3-step procedure.
+The R package `SGM` provides a set of functions that learn a latent graph from the data through modeling the observations as stationary signals on this graph.  Currently, the package offers functions to fit a `GAR(1)` model through a 3-step procedure.
 
 *** 
 
