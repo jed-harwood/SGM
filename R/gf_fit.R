@@ -2,6 +2,33 @@
 ##### goodness of fit by parametric bootsrap
 ##### Added 2024-09-27: Use Step 1 Estimates 
 
+########################################
+#### Functions used for GF.fit #########
+########################################
+
+###### generate data according to GAR(1) model: Simga^{-1}=Omega=(theta0+theta1*L)^2
+GenData.L2<-function(n,theta0,theta1, L, rep=1){
+  ##n: sample size
+  ## theta0>0, theta1>0
+  ##L: (normalized)  Laplacian, p by p matrix 
+  ## rep: number of replicates 
+  ## return: list of n by p data matrices; p by p concentration matrix: Omega; p by p covariance matrix: Sigma
+  
+  library(mnormt)
+  data.rep=NULL
+  
+  p=nrow(L)
+  Omega=(theta0*diag(1,p)+theta1*L)%*%(theta0*diag(1,p)+theta1*L)
+  Sigma=solve(Omega)
+  
+  for (i in 1:rep){
+    data=rmnorm(n, mean=rep(0,p), varcov=Sigma)
+    data.rep[[i]]=data
+  }
+  
+  return(list(data=data.rep, Omega=Omega, Sigma=Sigma))  
+}
+
 bootstrap.like <- function(L, theta0, theta1, n, lambda.v, rho.v=lambda.v, rep.boot=100, num.thread = 1, seed = 1){
   
   ## Generate bootstrap samples
