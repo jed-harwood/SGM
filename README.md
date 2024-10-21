@@ -74,7 +74,7 @@ S = var(stocks)*(n-1)/n
 GAR1_gf(S, n, lambda.v[1])
 
 ### Run GAR1_fit (up to step 3)
-resList = GAR1_fit(S, n, lambda.v, net.thre, model)
+resList = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
 ### Conduct model selection via eBIC
 optModel = model_sele(resList, n, step = 3, model = "LN")
