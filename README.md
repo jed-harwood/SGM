@@ -124,8 +124,7 @@ gar1_fitted.2 = fit.gar1.2$model.selec
 fit.gar1.3 = model_selec(fit, n, step = 3, model)
 gar1_fitted.3 = fit.gar1.3$model.selec
 
-### Evaluate estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
-
+### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 ## Get ground truth
 A.tr = gar1$A.tr # True adjacency matrix
 LN = gar1$LN # True (normalized) graph Laplacian
