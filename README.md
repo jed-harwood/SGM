@@ -56,6 +56,7 @@ For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, r
 
 ### Fit `GAR(1)` to `stocks` data.
 ```
+### See ?stocks for more information
 data("stocks")
 n=nrow(stocks)
 p=ncol(stocks)
