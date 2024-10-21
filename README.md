@@ -25,11 +25,11 @@ install_github(repo="jed-harwood/SGM")
 `GAR1_gf`: run a goodness of fit test to determine if GAR(1) is appropriate. Valid for n >= p.  Return a value between 0 and 1. If the returned value is close to 1, then it means that the GAR(1) model is a good fit to the data.
 
 `GAR1_fit`: learn a GAR(1) SGM for a given set of tuning parameters, using a 3 step estimation procedure based on a penalized MLE.  
-* Step 1: given an initial estimate (S) for the covariance matrix (e.g., by the sample covariance matrix) and an initial estimate for theta0, uses an ADMM algorithm to estimate the (normalized) graph Laplacian.  The initial estimate for theta0 is the reciprocal of the largest eigenvalue of S, squared.
-* Step 2: given the zero-pattern in the Laplacian from Step 1, uses an ADMM algorithm to refit the off-diagonal elements of the (normalized) graph Laplacian.
+* Step 1: given an initial estimate (`S`) for the covariance matrix (e.g., by the sample covariance matrix) and an initial estimate for `theta0`, uses an ADMM algorithm to estimate the (normalized) graph Laplacian.  The initial estimate for `theta0` is the reciprocal of the largest eigenvalue of `S`, squared.
+* Step 2: given the zero-pattern in the Laplacian from Step 1, uses an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian.
 * Step 3:
-    * a. given the (normalized) graph Laplacian from Step 2, uses an ADMM algorithm to estimate the degree vector v0.
-    * b. given v0 and the zero-pattern from Step 1, uses an ADMM algorithm to simultaneously re-estimate theta0 and the (normalized) graph Laplacian.
+    * a. given the (normalized) graph Laplacian from Step 2, uses an ADMM algorithm to estimate the normalized degree vector `v0`.
+    * b. given `v0` and the zero-pattern from Step 1, uses an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian.
 
 `model_selec`: conduct model selection via the eBIC criterion
 
