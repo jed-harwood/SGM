@@ -30,7 +30,7 @@ install_github(repo="jed-harwood/SGM")
 * Step 1: given `S`  and `theta0` from Step 0, use an ADMM algorithm to estimate the (normalized) graph Laplacian `L` of the latent graph.  
 * Step 2: given the zero-pattern in `L` from Step 1, use an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian `L`.
 * Step 3:
-    * a. given the (normalized) graph Laplacian `L` from Step 2, use an ADMM algorithm to estimate the normalized degree vector `v_0`.
+    * a. given the (normalized) graph Laplacian `L` from Step 2, use an ADMM algorithm to estimate the normalized degree vector `v0`.
     * b. given `v0` and the zero-pattern of `L` from Step 1, use an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian `L`.
 
 `model_selec`: conduct model selection via the eBIC criterion.
