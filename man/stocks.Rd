@@ -14,7 +14,7 @@ Ryan JA, Ulrich JM (2024). quantmod: Quantitative Financial Modelling Framework.
 data("stocks")
 }
 \description{
-A matrix with information on 283 stocks across five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials. The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.
+A matrix with information on 283 stocks across five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials. The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.  The numbers reflect the (standardized) log-returns of the S&P 500 stocks, and are based on raw data obtained via the R package \code{quantmod}.
 }
 \examples{
 data(stocks)
