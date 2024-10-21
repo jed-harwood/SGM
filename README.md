@@ -54,40 +54,6 @@ To load a dataset into the working environment, run `data("<dataname>")`.  For m
 
 For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, run `?GAR1_gf`, `?GAR1_fit` and `?model_selec` in R.  
 
-### Fit `GAR(1)` to `stocks` data.
-```
-### See ?stocks for more information
-data("stocks")
-n=nrow(stocks)
-p=ncol(stocks)
-
-### Set the model to fit: GAR(1)-normalized Laplacian model
-model="LN" 
-
-### Set tuning parameters: lambda and net.thre sequence
-C.v=c(8,4,1)
-lambda.v=C.v*sqrt(log(p)/n)
-
-C.thre=exp(seq(log(1),log(0.1), length.out=12))
-net.thre=C.thre*sqrt(log(p)/n)
-
-### Set ADMM parameter
-rho.v=pmax(lambda.v, 0.01)
-
-### Calculate sample covariance
-S = var(stocks)*(n-1)/n
-
-### Determine if GAR(1) model is appropriate
-GAR1_gf(S, n, lambda.v[1])
-
-### Run GAR1_fit (up to step 3)
-resList = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
-
-### Conduct model selection via eBIC
-optModel = model_sele(resList, n, step = 3, model = "LN")
-```
-
-
 ### Fit `GAR(1)` to the simulated `gar1` data. 
 ```
 ### See ?gar1 for more information
