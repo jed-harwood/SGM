@@ -401,7 +401,33 @@ bool Dual_Cri(const Eigen::MatrixXd Z, const Eigen::MatrixXd Z_u, const Eigen::M
 //// Z_max_iter, Z_conv_abs, Z_conv_rel: maximum number of steps and convergence thresholds for Z-phi minimization step (inner iteration)
 //// Return: L, Z, W, and convergence status.
 
-//' Added 10/9/2024
+//' ADMM algorithm to estimate graph filter parameters and (normalized) graph Laplacian simultaneously, given v0.
+//' 
+//' @param SS an estimated covariance matrix, such as the sample covariance matrix.
+//' @param V0 A given degree vector.
+//' @param rho ADMM parameter. 
+//' @param lambda Tuning parameter.
+//' @param model A character specifying which type of Laplacian to use.
+//' @param ZZ_ini An initial value for the ADMM algorithm.
+//' @param WW_ini An initial value for the ADMM algorithm.
+//' @param phi_ini An initial value for the ADMM algorithm.
+//' @param eps_thre A small positive number
+//' @param eps_abs ADMM stopping criterion
+//' @param eps_rel ADMM stopping criterion
+//' @param max_iter Maximum number of iterations to run
+//' @param Z_max_iter Maximum number of iterations to run inner algorithm.
+//' @param Z_conv_abs Convergence criterion for inner algorithm
+//' @param Z_conv_rel Convergence criterion for inner algorithm
+//' @param verbose Trace of ADMM algorithm
+//' 
+//' @returns
+//' * `L`: A p by p matrix.
+//' * `theta0`: A positive number.
+//' * `theta1`: A positive number.
+//' * `Z`: A p by p matrix.
+//' * `phi`: A positive number.
+//' * `W`: A p by p matrix.
+//' * `conv:` A boolean indicating convergence (TRUE if converged).
 //' @export
 // [[Rcpp::export]]
 List ADMM_Lap(const Rcpp::NumericMatrix& SS, Rcpp::NumericVector& V0, double rho, double lambda, std::string model, const Rcpp::NumericMatrix& ZZ_ini, const Rcpp::NumericMatrix& WW_ini, double phi_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, int Z_max_iter, double Z_conv_abs, double Z_conv_rel, bool verbose){
@@ -512,7 +538,34 @@ List ADMM_Lap(const Rcpp::NumericMatrix& SS, Rcpp::NumericVector& V0, double rho
   
 }
 
-//' Added 10/09/2024
+//' ADMM algorithm to estimate graph filter parameters and (normalized) graph Laplacian simultaneously, given v0 and zero pattern.
+//' 
+//' @param SS an estimated covariance matrix, such as the sample covariance matrix.
+//' @param V0 A given degree vector.
+//' @param rho ADMM parameter. 
+//' @param AA A matrix encoding the zero-pattern of the (normalized) graph Laplacian.
+//' @param lambda Tuning parameter.
+//' @param model A character specifying which type of Laplacian to use.
+//' @param ZZ_ini An initial value for the ADMM algorithm.
+//' @param WW_ini An initial value for the ADMM algorithm.
+//' @param phi_ini An initial value for the ADMM algorithm.
+//' @param eps_thre A small positive number
+//' @param eps_abs ADMM stopping criterion
+//' @param eps_rel ADMM stopping criterion
+//' @param max_iter Maximum number of iterations to run
+//' @param Z_max_iter Maximum number of iterations to run inner algorithm.
+//' @param Z_conv_abs Convergence criterion for inner algorithm
+//' @param Z_conv_rel Convergence criterion for inner algorithm
+//' @param verbose Trace of ADMM algorithm
+//' 
+//' @returns
+//' * `L`: A p by p matrix.
+//' * `theta0`: A positive number.
+//' * `theta1`: A positive number.
+//' * `Z`: A p by p matrix.
+//' * `phi`: A positive number.
+//' * `W`: A p by p matrix.
+//' * `conv:` A boolean indicating convergence (TRUE if converged).
 //' @export
 // [[Rcpp::export]]
 List ADMM_Lap_Zero(const Rcpp::NumericMatrix& SS, Rcpp::NumericVector& V0, double rho, const Rcpp::NumericMatrix& AA, std::string model, const Rcpp::NumericMatrix& ZZ_ini, const Rcpp::NumericMatrix& WW_ini, double phi_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, int Z_max_iter, double Z_conv_abs, double Z_conv_rel, bool verbose){

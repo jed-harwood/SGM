@@ -203,13 +203,27 @@ bool Dual_Cri(Eigen::MatrixXd& Z, Eigen::MatrixXd& Z_u, Eigen::MatrixXd& W, Eige
 
 //' ADMM algorithm for estimating (normalized) graph Laplacian given v0 and theta0
 //' 
-//' @param `s` an estimated covariance matrix, such as the sample covariance matrix
-//' @param `theta0` A given graph filter parameter
-//' @param `v` A given degree vector
-//' @param `rho` ADMM parameter 
-//' @param `lambda` Tuning parameter
-//' @param `model` A character specifying which type of Laplacian to use
-//' @export
+//' @param s an estimated covariance matrix, such as the sample covariance matrix.
+//' @param theta0 A given estimate for the graph filter parameter theta0.
+//' @param v A given degree vector.
+//' @param rho ADMM parameter. 
+//' @param lambda Tuning parameter.
+//' @param model A character specifying which type of Laplacian to use.
+//' @param Z_ini An initial value for the ADMM algorithm
+//' @param W_ini An initial value for the ADMM algorithm
+//' @param eps_thre A small positive number
+//' @param eps_abs ADMM stopping criterion
+//' @param eps_rel ADMM stopping criterion
+//' @param max_iter Maximum number of iterations to run
+//' @param verbose Trace of ADMM algorithm
+//' 
+//' @returns
+//' * `L`: A p by p matrix.
+//' * `Z`: A p by p matrix.
+//' * `W`: A p by p matrix,
+//' * `theta0`: The estimate for `theta0` used.
+//' * `conv`: A boolean indicating convergence (TRUE if converged).
+//' @export 
 // [[Rcpp::export]]
 List ADMM_L2(const Rcpp::NumericMatrix& s, double theta0, Rcpp::NumericVector& v, double rho, double lambda, std::string model, const Rcpp::NumericMatrix& Z_ini, const Rcpp::NumericMatrix& W_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){
   
@@ -291,7 +305,29 @@ List ADMM_L2(const Rcpp::NumericMatrix& s, double theta0, Rcpp::NumericVector& v
   
 }
 
-//' Added 10/09/2024
+//' ADMM Algorithm for estimating (normalized) Graph Laplacian given v0, theta0, and a zero-pattern.
+//' 
+//' @param SS an estimated covariance matrix, such as the sample covariance matrix.
+//' @param theta0 A given estimate for the graph filter parameter theta0.
+//' @param v A given degree vector.
+//' @param rho ADMM parameter. 
+//' @param AA A p by p matrix encoding the zero pattern for the (normalized) graph Laplacian.
+//' @param lambda Tuning parameter.
+//' @param model A character specifying which type of Laplacian to use.
+//' @param Z_ini An initial value for the ADMM algorithm
+//' @param W_ini An initial value for the ADMM algorithm
+//' @param eps_thre A small positive number
+//' @param eps_abs ADMM stopping criterion
+//' @param eps_rel ADMM stopping criterion
+//' @param max_iter Maximum number of iterations to run
+//' @param verbose Trace of ADMM algorithm
+//' 
+//' @returns
+//' * `L`: A p by p matrix.
+//' * `Z`: A p by p matrix.
+//' * `W`: A p by p matrix,
+//' * `theta0`: The estimate for `theta0` used.
+//' * `conv`: A boolean indicating convergence (TRUE if converged).
 //' @export
 // [[Rcpp::export]]
 List ADMM_L2_Zero(const Rcpp::NumericMatrix& SS, double theta0, Rcpp::NumericVector& v, double rho, const Rcpp::NumericMatrix AA, std::string model, const Rcpp::NumericMatrix& Z_ini, const Rcpp::NumericMatrix& W_ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){
@@ -378,7 +414,22 @@ List ADMM_L2_Zero(const Rcpp::NumericMatrix& SS, double theta0, Rcpp::NumericVec
 
 
 
-//' Added 10/9/2024
+//' Extension of `ADMM_L2` to handle a sequence of lambda values.
+//' 
+//' @param S A p by p estimate of the covariance matrix, such as the sample covariance matrix.
+//' @param theta0 Estimate for graph-filter parameter `theta0`.
+//' @param v0 A given degree vector.
+//' @param Rho A vector of ADMM parameters
+//' @param Lambda A vector of tuning parameters
+//' @param model To specify which model to use.
+//' @param ini Whether to initialize ADMM with given values (TRUE) or not (FALSE). 
+//' @param eps_thre A small positive number
+//' @param eps_abs ADMM stopping criterion
+//' @param eps_rel ADMM stopping criterion
+//' @param max_iter Maximum number of iterations to run
+//' @param verbose Trace of ADMM algorithm
+//' 
+//' @returns A list containing the corresponding output of `ADMM_L2` applied to each value of `Lambda`
 //' @export
 // [[Rcpp::export]]
 List ADMM_L2_seq(const Rcpp::NumericMatrix& S, double theta0, Rcpp::NumericVector& v0, Rcpp::NumericVector& Rho, Rcpp::NumericVector& Lambda, std::string model, bool ini, double eps_thre, double eps_abs, double eps_rel, int max_iter, bool verbose){

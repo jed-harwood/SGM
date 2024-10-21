@@ -31,12 +31,12 @@ GAR1_fit(
 \item{net.thre}{Tuning parameter to control noisy entries in estimated graph}
 
 \item{model}{\itemize{
-\item "LN" Fits a normalized graph Laplacian
-\item "L" Fits a graph Laplacian
-\item "LN.noselfloop" Fits a normalized graph laplacian assuming no self-loops.
+\item \code{"LN"}: Fits a normalized graph Laplacian
+\item \code{"L"}: Fits a graph Laplacian
+\item \code{"LN.noselfloop"}: Fits a normalized graph laplacian assuming no self-loops.
 }}
 
-\item{step}{How many steps of the estimation procedure you want to run. Either 2 or 3.}
+\item{step}{How many steps of the estimation procedure you want to run. Either 1, 2, or 3.}
 
 \item{rho.v}{ADMM parameter (typically equal to \code{lambda.v})}
 
@@ -55,12 +55,12 @@ A list object
 \item \code{result.L2.0} A list containing the Step 1a results
 \item \code{result.0.post} A list containing the Step 2a results
 \item \code{result.0S} A list containing the Step 3 results (NULL if \code{step<3})
-\item \code{A.0.net} A matrix that encodes the estimated graph topology
-\item \code{net.0.size} An integer containing the number of edges in the estimated graph
-\item \code{v0.0.est} A p by 1 matrix containing the estimated degree vector
-\item \code{theta0.0} A positive number. The estimated theta0 from Step 2
-\item \code{theta0.0S} A positive number. The estimated theta0 from Step 3
-\item \code{conv.0.v0} A matrix containing convergence results for each combination of \code{lambda.v} (rows) and \code{net.thre} (columns)
+\item \code{A.0.net} A matrix that encodes the estimated graph topology (NULL if \code{step<2})
+\item \code{net.0.size} An integer containing the number of edges in the estimated graph (NULL if \code{step<2})
+\item \code{v0.0.est} A p by 1 matrix containing the estimated degree vector (NULL if \code{step<3})
+\item \code{theta0.0} A positive number. The estimated theta0 from Step 1 (and 2)
+\item \code{theta0.0S} A positive number. The estimated theta0 from Step 3 (NULL if \code{step<3})
+\item \code{conv.0.v0} A matrix containing convergence results for each combination of \code{lambda.v} (rows) and \code{net.thre} (columns) (NULL if \code{step<3})
 }
 }
 \description{

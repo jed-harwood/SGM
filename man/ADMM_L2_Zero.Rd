@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{ADMM_L2_Zero}
 \alias{ADMM_L2_Zero}
-\title{Added 10/09/2024}
+\title{ADMM Algorithm for estimating (normalized) Graph Laplacian given v0, theta0, and a zero-pattern.}
 \usage{
 ADMM_L2_Zero(
   SS,
@@ -20,6 +20,44 @@ ADMM_L2_Zero(
   verbose
 )
 }
+\arguments{
+\item{SS}{an estimated covariance matrix, such as the sample covariance matrix.}
+
+\item{theta0}{A given estimate for the graph filter parameter theta0.}
+
+\item{v}{A given degree vector.}
+
+\item{rho}{ADMM parameter.}
+
+\item{AA}{A p by p matrix encoding the zero pattern for the (normalized) graph Laplacian.}
+
+\item{model}{A character specifying which type of Laplacian to use.}
+
+\item{Z_ini}{An initial value for the ADMM algorithm}
+
+\item{W_ini}{An initial value for the ADMM algorithm}
+
+\item{eps_thre}{A small positive number}
+
+\item{eps_abs}{ADMM stopping criterion}
+
+\item{eps_rel}{ADMM stopping criterion}
+
+\item{max_iter}{Maximum number of iterations to run}
+
+\item{verbose}{Trace of ADMM algorithm}
+
+\item{lambda}{Tuning parameter.}
+}
+\value{
+\itemize{
+\item \code{L}: A p by p matrix.
+\item \code{Z}: A p by p matrix.
+\item \code{W}: A p by p matrix,
+\item \code{theta0}: The estimate for \code{theta0} used.
+\item \code{conv}: A boolean indicating convergence (TRUE if converged).
+}
+}
 \description{
-Added 10/09/2024
+ADMM Algorithm for estimating (normalized) Graph Laplacian given v0, theta0, and a zero-pattern.
 }

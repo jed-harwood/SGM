@@ -30,7 +30,12 @@ ADMM.Deg.L(
 \item{verbose}{Trace of fitting procedure}
 }
 \value{
-A p by 1 matrix
+\itemize{
+\item \code{v}: A p by 1 matrix
+\item \code{w}: A p by 1 matrix
+\item \code{deg}: A p by 1 matrix
+\item \code{conv}: A boolean indicating whether the algorithm converged (TRUE) or didn't (FALSE).
+}
 }
 \description{
 \code{ADMM.Deg.L} returns an estimated degree vector to minimize ||Lv0||, with each element restricted to be at least epsilon.

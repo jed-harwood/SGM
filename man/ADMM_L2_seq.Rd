@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{ADMM_L2_seq}
 \alias{ADMM_L2_seq}
-\title{Added 10/9/2024}
+\title{Extension of \code{ADMM_L2} to handle a sequence of lambda values.}
 \usage{
 ADMM_L2_seq(
   S,
@@ -19,6 +19,34 @@ ADMM_L2_seq(
   verbose
 )
 }
+\arguments{
+\item{S}{A p by p estimate of the covariance matrix, such as the sample covariance matrix.}
+
+\item{theta0}{Estimate for graph-filter parameter \code{theta0}.}
+
+\item{v0}{A given degree vector.}
+
+\item{Rho}{A vector of ADMM parameters}
+
+\item{Lambda}{A vector of tuning parameters}
+
+\item{model}{To specify which model to use.}
+
+\item{ini}{Whether to initialize ADMM with given values (TRUE) or not (FALSE).}
+
+\item{eps_thre}{A small positive number}
+
+\item{eps_abs}{ADMM stopping criterion}
+
+\item{eps_rel}{ADMM stopping criterion}
+
+\item{max_iter}{Maximum number of iterations to run}
+
+\item{verbose}{Trace of ADMM algorithm}
+}
+\value{
+A list containing the corresponding output of \code{ADMM_L2} applied to each value of \code{Lambda}
+}
 \description{
-Added 10/9/2024
+Extension of \code{ADMM_L2} to handle a sequence of lambda values.
 }

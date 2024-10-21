@@ -152,7 +152,7 @@ fit_step_3a_0 = function(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, v
       
       if(!is.null(result.c)&&result.c$conv){
         L.est = result.c$L
-        temp=try(ADMM_Deg_L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps_abs=1e-5, eps_rel=1e-3, max_iter=50000, verbose=FALSE))
+        temp=try(ADMM.Deg.L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps.abs=1e-5, eps.rel=1e-3, max_iter=50000, verbose=FALSE))
         
         if (inherits(temp, "try-error")){
           temp = list("v" = rep(0,p), "conv" = F)
@@ -230,10 +230,10 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' @param lambda.v Tuning parameter to control sparsity of the estimated graph
 #' @param net.thre Tuning parameter to control noisy entries in estimated graph
 #' @param model
-#' * "LN" Fits a normalized graph Laplacian
-#' * "L" Fits a graph Laplacian
-#' * "LN.noselfloop" Fits a normalized graph laplacian assuming no self-loops.
-#' @param step How many steps of the estimation procedure you want to run. Either 2 or 3.
+#' * `"LN"`: Fits a normalized graph Laplacian
+#' * `"L"`: Fits a graph Laplacian
+#' * `"LN.noselfloop"`: Fits a normalized graph laplacian assuming no self-loops.
+#' @param step How many steps of the estimation procedure you want to run. Either 1, 2, or 3.
 #' @param rho.v ADMM parameter (typically equal to `lambda.v`)
 #' @param eps_thre Small positive number
 #' @param eps_abs ADMM convergence criterion
@@ -246,12 +246,12 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' * `result.L2.0` A list containing the Step 1a results
 #' * `result.0.post` A list containing the Step 2a results
 #' * `result.0S` A list containing the Step 3 results (NULL if `step<3`)
-#' * `A.0.net` A matrix that encodes the estimated graph topology
-#' * `net.0.size` An integer containing the number of edges in the estimated graph
-#' * `v0.0.est` A p by 1 matrix containing the estimated degree vector
-#' * `theta0.0` A positive number. The estimated theta0 from Step 2
-#' * `theta0.0S` A positive number. The estimated theta0 from Step 3
-#' * `conv.0.v0` A matrix containing convergence results for each combination of `lambda.v` (rows) and `net.thre` (columns)
+#' * `A.0.net` A matrix that encodes the estimated graph topology (NULL if `step<2`)
+#' * `net.0.size` An integer containing the number of edges in the estimated graph (NULL if `step<2`)
+#' * `v0.0.est` A p by 1 matrix containing the estimated degree vector (NULL if `step<3`)
+#' * `theta0.0` A positive number. The estimated theta0 from Step 1 (and 2)
+#' * `theta0.0S` A positive number. The estimated theta0 from Step 3 (NULL if `step<3`)
+#' * `conv.0.v0` A matrix containing convergence results for each combination of `lambda.v` (rows) and `net.thre` (columns) (NULL if `step<3`)
 #' 
 #' @example man-roxygen/GAR1_fit_example.R
 #' @export
@@ -307,17 +307,17 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
 #' 
 #' @param resultList A list output from `GAR1_fit`
 #' @param n An integer referring to the number of observations
-#' @param step 2 or 3; How many steps were used to fit the model.
+#' @param step 2 or 3; How many steps were used to fit the model.  Requires that at least step 2 was used for `GAR1_fit`.
 #' @param model Which model to consider
-#' * "LN" Normalized graph Laplacian
-#' * "L" Graph Laplacian
-#' * "LN.noselfloop" Normalized graph Laplacian without self-loops. 
+#' * `"LN"` Normalized graph Laplacian
+#' * `"L"` Graph Laplacian
+#' * `"LN.noselfloop"` Normalized graph Laplacian without self-loops. 
 #' 
 #' @returns A list object
-#' * model.selec A list containing the model with the model chosen by the eBIC criterion.
-#' * A.net.e A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
-#' * index Index for the optimal tuning parameters (lambda, net.thre) for the eBIC-selected model.
-#' * ebic ebic score for the selected model
+#' * `model.selec`: A list containing the model with the model chosen by the eBIC criterion.
+#' * `A.net.e`: A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
+#' * `index`: Index for the optimal tuning parameters (lambda, net.thre) for the eBIC-selected model.
+#' * `ebic`: ebic score for the selected model.
 #' 
 #' @export
 model_selec = function(resultList, n, step = 3, model = "LN"){

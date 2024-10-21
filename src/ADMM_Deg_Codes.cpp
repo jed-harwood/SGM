@@ -147,7 +147,7 @@ Rcpp::List ADMM_Deg(const Rcpp::NumericMatrix& s, double rho, double epsilon, do
 
 //' ADMM for Degree estimation
 //' 
-//' Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.
+//' Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.  Same as `ADMM.Deg.L`. but written in C++ and uses a different root-solving algorithm.
 //' 
 //' @param L A  p by p (normalized) graph laplacian
 //' @param rho ADMM parameter (positive number)
@@ -158,10 +158,10 @@ Rcpp::List ADMM_Deg(const Rcpp::NumericMatrix& s, double rho, double epsilon, do
 //' @param verbose Trace of algorithm
 //' 
 //' @returns A list object
-//' * `v` A length p vector
-//' * `w` A length p vector
-//' * `deg` A length p vector
-//' * `conv` A boolean indicating convergence
+//' * `v`: A p by 1 matrix 
+//' * `w`: A p by 1 matrix
+//' * `deg`: A p by 1 matrix 
+//' * `conv` A boolean indicating convergence (TRUE if converged)
 //' 
 //' @export
 // [[Rcpp::export]]

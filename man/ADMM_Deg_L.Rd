@@ -24,12 +24,12 @@ ADMM_Deg_L(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose)
 \value{
 A list object
 \itemize{
-\item \code{v} A length p vector
-\item \code{w} A length p vector
-\item \code{deg} A length p vector
-\item \code{conv} A boolean indicating convergence
+\item \code{v}: A p by 1 matrix
+\item \code{w}: A p by 1 matrix
+\item \code{deg}: A p by 1 matrix
+\item \code{conv} A boolean indicating convergence (TRUE if converged)
 }
 }
 \description{
-Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.
+Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.  Same as \code{ADMM.Deg.L}. but written in C++ and uses a different root-solving algorithm.
 }

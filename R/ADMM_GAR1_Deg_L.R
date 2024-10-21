@@ -74,7 +74,10 @@ w.Min<-function(v,u, epsilon=1e-2){
 #' `ADMM.Deg.L` returns an estimated degree vector to minimize ||Lv0||, with each element restricted to be at least epsilon.
 #' 
 #' @returns
-#' A p by 1 matrix
+#' * `v`: A p by 1 matrix
+#' * `w`: A p by 1 matrix
+#' * `deg`: A p by 1 matrix
+#' * `conv`: A boolean indicating whether the algorithm converged (TRUE) or didn't (FALSE).  
 #' 
 #' @param L A p by p normalized graph Laplacian
 #' @param rho ADMM parameter (a positive number)

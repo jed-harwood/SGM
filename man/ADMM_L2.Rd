@@ -21,17 +21,40 @@ ADMM_L2(
 )
 }
 \arguments{
-\item{`s`}{an estimated covariance matrix, such as the sample covariance matrix}
+\item{s}{an estimated covariance matrix, such as the sample covariance matrix.}
 
-\item{`theta0`}{A given graph filter parameter}
+\item{theta0}{A given estimate for the graph filter parameter theta0.}
 
-\item{`v`}{A given degree vector}
+\item{v}{A given degree vector.}
 
-\item{`rho`}{ADMM parameter}
+\item{rho}{ADMM parameter.}
 
-\item{`lambda`}{Tuning parameter}
+\item{lambda}{Tuning parameter.}
 
-\item{`model`}{A character specifying which type of Laplacian to use}
+\item{model}{A character specifying which type of Laplacian to use.}
+
+\item{Z_ini}{An initial value for the ADMM algorithm}
+
+\item{W_ini}{An initial value for the ADMM algorithm}
+
+\item{eps_thre}{A small positive number}
+
+\item{eps_abs}{ADMM stopping criterion}
+
+\item{eps_rel}{ADMM stopping criterion}
+
+\item{max_iter}{Maximum number of iterations to run}
+
+\item{verbose}{Trace of ADMM algorithm}
+}
+\value{
+\itemize{
+\item \code{L}: A p by p matrix.
+\item \code{Z}: A p by p matrix.
+\item \code{W}: A p by p matrix,
+\item \code{theta0}: The estimate for \code{theta0} used.
+\item \code{conv}: A boolean indicating convergence (TRUE if converged).
+}
 }
 \description{
 ADMM algorithm for estimating (normalized) graph Laplacian given v0 and theta0

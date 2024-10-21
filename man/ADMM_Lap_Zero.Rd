@@ -2,7 +2,7 @@
 % Please edit documentation in R/RcppExports.R
 \name{ADMM_Lap_Zero}
 \alias{ADMM_Lap_Zero}
-\title{Added 10/09/2024}
+\title{ADMM algorithm to estimate graph filter parameters and (normalized) graph Laplacian simultaneously, given v0 and zero pattern.}
 \usage{
 ADMM_Lap_Zero(
   SS,
@@ -23,6 +23,52 @@ ADMM_Lap_Zero(
   verbose
 )
 }
+\arguments{
+\item{SS}{an estimated covariance matrix, such as the sample covariance matrix.}
+
+\item{V0}{A given degree vector.}
+
+\item{rho}{ADMM parameter.}
+
+\item{AA}{A matrix encoding the zero-pattern of the (normalized) graph Laplacian.}
+
+\item{model}{A character specifying which type of Laplacian to use.}
+
+\item{ZZ_ini}{An initial value for the ADMM algorithm.}
+
+\item{WW_ini}{An initial value for the ADMM algorithm.}
+
+\item{phi_ini}{An initial value for the ADMM algorithm.}
+
+\item{eps_thre}{A small positive number}
+
+\item{eps_abs}{ADMM stopping criterion}
+
+\item{eps_rel}{ADMM stopping criterion}
+
+\item{max_iter}{Maximum number of iterations to run}
+
+\item{Z_max_iter}{Maximum number of iterations to run inner algorithm.}
+
+\item{Z_conv_abs}{Convergence criterion for inner algorithm}
+
+\item{Z_conv_rel}{Convergence criterion for inner algorithm}
+
+\item{verbose}{Trace of ADMM algorithm}
+
+\item{lambda}{Tuning parameter.}
+}
+\value{
+\itemize{
+\item \code{L}: A p by p matrix.
+\item \code{theta0}: A positive number.
+\item \code{theta1}: A positive number.
+\item \code{Z}: A p by p matrix.
+\item \code{phi}: A positive number.
+\item \code{W}: A p by p matrix.
+\item \verb{conv:} A boolean indicating convergence (TRUE if converged).
+}
+}
 \description{
-Added 10/09/2024
+ADMM algorithm to estimate graph filter parameters and (normalized) graph Laplacian simultaneously, given v0 and zero pattern.
 }

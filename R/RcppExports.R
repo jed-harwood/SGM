@@ -7,7 +7,7 @@ ADMM_Deg <- function(s, rho, epsilon, eps_abs, eps_rel, max_iter, verbose) {
 
 #' ADMM for Degree estimation
 #' 
-#' Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.
+#' Given a (normalized) graph laplacian, estimate the degree vector by an ADMM algorithm.  Same as `ADMM.Deg.L`. but written in C++ and uses a different root-solving algorithm.
 #' 
 #' @param L A  p by p (normalized) graph laplacian
 #' @param rho ADMM parameter (positive number)
@@ -18,10 +18,10 @@ ADMM_Deg <- function(s, rho, epsilon, eps_abs, eps_rel, max_iter, verbose) {
 #' @param verbose Trace of algorithm
 #' 
 #' @returns A list object
-#' * `v` A length p vector
-#' * `w` A length p vector
-#' * `deg` A length p vector
-#' * `conv` A boolean indicating convergence
+#' * `v`: A p by 1 matrix 
+#' * `w`: A p by 1 matrix
+#' * `deg`: A p by 1 matrix 
+#' * `conv` A boolean indicating convergence (TRUE if converged)
 #' 
 #' @export
 ADMM_Deg_L <- function(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose) {
@@ -30,36 +30,140 @@ ADMM_Deg_L <- function(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose) {
 
 #' ADMM algorithm for estimating (normalized) graph Laplacian given v0 and theta0
 #' 
-#' @param `s` an estimated covariance matrix, such as the sample covariance matrix
-#' @param `theta0` A given graph filter parameter
-#' @param `v` A given degree vector
-#' @param `rho` ADMM parameter 
-#' @param `lambda` Tuning parameter
-#' @param `model` A character specifying which type of Laplacian to use
-#' @export
+#' @param s an estimated covariance matrix, such as the sample covariance matrix.
+#' @param theta0 A given estimate for the graph filter parameter theta0.
+#' @param v A given degree vector.
+#' @param rho ADMM parameter. 
+#' @param lambda Tuning parameter.
+#' @param model A character specifying which type of Laplacian to use.
+#' @param Z_ini An initial value for the ADMM algorithm
+#' @param W_ini An initial value for the ADMM algorithm
+#' @param eps_thre A small positive number
+#' @param eps_abs ADMM stopping criterion
+#' @param eps_rel ADMM stopping criterion
+#' @param max_iter Maximum number of iterations to run
+#' @param verbose Trace of ADMM algorithm
+#' 
+#' @returns
+#' * `L`: A p by p matrix.
+#' * `Z`: A p by p matrix.
+#' * `W`: A p by p matrix,
+#' * `theta0`: The estimate for `theta0` used.
+#' * `conv`: A boolean indicating convergence (TRUE if converged).
+#' @export 
 ADMM_L2 <- function(s, theta0, v, rho, lambda, model, Z_ini, W_ini, eps_thre, eps_abs, eps_rel, max_iter, verbose) {
     .Call(`_SGM_ADMM_L2`, s, theta0, v, rho, lambda, model, Z_ini, W_ini, eps_thre, eps_abs, eps_rel, max_iter, verbose)
 }
 
-#' Added 10/09/2024
+#' ADMM Algorithm for estimating (normalized) Graph Laplacian given v0, theta0, and a zero-pattern.
+#' 
+#' @param SS an estimated covariance matrix, such as the sample covariance matrix.
+#' @param theta0 A given estimate for the graph filter parameter theta0.
+#' @param v A given degree vector.
+#' @param rho ADMM parameter. 
+#' @param AA A p by p matrix encoding the zero pattern for the (normalized) graph Laplacian.
+#' @param lambda Tuning parameter.
+#' @param model A character specifying which type of Laplacian to use.
+#' @param Z_ini An initial value for the ADMM algorithm
+#' @param W_ini An initial value for the ADMM algorithm
+#' @param eps_thre A small positive number
+#' @param eps_abs ADMM stopping criterion
+#' @param eps_rel ADMM stopping criterion
+#' @param max_iter Maximum number of iterations to run
+#' @param verbose Trace of ADMM algorithm
+#' 
+#' @returns
+#' * `L`: A p by p matrix.
+#' * `Z`: A p by p matrix.
+#' * `W`: A p by p matrix,
+#' * `theta0`: The estimate for `theta0` used.
+#' * `conv`: A boolean indicating convergence (TRUE if converged).
 #' @export
 ADMM_L2_Zero <- function(SS, theta0, v, rho, AA, model, Z_ini, W_ini, eps_thre, eps_abs, eps_rel, max_iter, verbose) {
     .Call(`_SGM_ADMM_L2_Zero`, SS, theta0, v, rho, AA, model, Z_ini, W_ini, eps_thre, eps_abs, eps_rel, max_iter, verbose)
 }
 
-#' Added 10/9/2024
+#' Extension of `ADMM_L2` to handle a sequence of lambda values.
+#' 
+#' @param S A p by p estimate of the covariance matrix, such as the sample covariance matrix.
+#' @param theta0 Estimate for graph-filter parameter `theta0`.
+#' @param v0 A given degree vector.
+#' @param Rho A vector of ADMM parameters
+#' @param Lambda A vector of tuning parameters
+#' @param model To specify which model to use.
+#' @param ini Whether to initialize ADMM with given values (TRUE) or not (FALSE). 
+#' @param eps_thre A small positive number
+#' @param eps_abs ADMM stopping criterion
+#' @param eps_rel ADMM stopping criterion
+#' @param max_iter Maximum number of iterations to run
+#' @param verbose Trace of ADMM algorithm
+#' 
+#' @returns A list containing the corresponding output of `ADMM_L2` applied to each value of `Lambda`
 #' @export
 ADMM_L2_seq <- function(S, theta0, v0, Rho, Lambda, model, ini, eps_thre, eps_abs, eps_rel, max_iter, verbose) {
     .Call(`_SGM_ADMM_L2_seq`, S, theta0, v0, Rho, Lambda, model, ini, eps_thre, eps_abs, eps_rel, max_iter, verbose)
 }
 
-#' Added 10/9/2024
+#' ADMM algorithm to estimate graph filter parameters and (normalized) graph Laplacian simultaneously, given v0.
+#' 
+#' @param SS an estimated covariance matrix, such as the sample covariance matrix.
+#' @param V0 A given degree vector.
+#' @param rho ADMM parameter. 
+#' @param lambda Tuning parameter.
+#' @param model A character specifying which type of Laplacian to use.
+#' @param ZZ_ini An initial value for the ADMM algorithm.
+#' @param WW_ini An initial value for the ADMM algorithm.
+#' @param phi_ini An initial value for the ADMM algorithm.
+#' @param eps_thre A small positive number
+#' @param eps_abs ADMM stopping criterion
+#' @param eps_rel ADMM stopping criterion
+#' @param max_iter Maximum number of iterations to run
+#' @param Z_max_iter Maximum number of iterations to run inner algorithm.
+#' @param Z_conv_abs Convergence criterion for inner algorithm
+#' @param Z_conv_rel Convergence criterion for inner algorithm
+#' @param verbose Trace of ADMM algorithm
+#' 
+#' @returns
+#' * `L`: A p by p matrix.
+#' * `theta0`: A positive number.
+#' * `theta1`: A positive number.
+#' * `Z`: A p by p matrix.
+#' * `phi`: A positive number.
+#' * `W`: A p by p matrix.
+#' * `conv:` A boolean indicating convergence (TRUE if converged).
 #' @export
 ADMM_Lap <- function(SS, V0, rho, lambda, model, ZZ_ini, WW_ini, phi_ini, eps_thre, eps_abs, eps_rel, max_iter, Z_max_iter, Z_conv_abs, Z_conv_rel, verbose) {
     .Call(`_SGM_ADMM_Lap`, SS, V0, rho, lambda, model, ZZ_ini, WW_ini, phi_ini, eps_thre, eps_abs, eps_rel, max_iter, Z_max_iter, Z_conv_abs, Z_conv_rel, verbose)
 }
 
-#' Added 10/09/2024
+#' ADMM algorithm to estimate graph filter parameters and (normalized) graph Laplacian simultaneously, given v0 and zero pattern.
+#' 
+#' @param SS an estimated covariance matrix, such as the sample covariance matrix.
+#' @param V0 A given degree vector.
+#' @param rho ADMM parameter. 
+#' @param AA A matrix encoding the zero-pattern of the (normalized) graph Laplacian.
+#' @param lambda Tuning parameter.
+#' @param model A character specifying which type of Laplacian to use.
+#' @param ZZ_ini An initial value for the ADMM algorithm.
+#' @param WW_ini An initial value for the ADMM algorithm.
+#' @param phi_ini An initial value for the ADMM algorithm.
+#' @param eps_thre A small positive number
+#' @param eps_abs ADMM stopping criterion
+#' @param eps_rel ADMM stopping criterion
+#' @param max_iter Maximum number of iterations to run
+#' @param Z_max_iter Maximum number of iterations to run inner algorithm.
+#' @param Z_conv_abs Convergence criterion for inner algorithm
+#' @param Z_conv_rel Convergence criterion for inner algorithm
+#' @param verbose Trace of ADMM algorithm
+#' 
+#' @returns
+#' * `L`: A p by p matrix.
+#' * `theta0`: A positive number.
+#' * `theta1`: A positive number.
+#' * `Z`: A p by p matrix.
+#' * `phi`: A positive number.
+#' * `W`: A p by p matrix.
+#' * `conv:` A boolean indicating convergence (TRUE if converged).
 #' @export
 ADMM_Lap_Zero <- function(SS, V0, rho, AA, model, ZZ_ini, WW_ini, phi_ini, eps_thre, eps_abs, eps_rel, max_iter, Z_max_iter, Z_conv_abs, Z_conv_rel, verbose) {
     .Call(`_SGM_ADMM_Lap_Zero`, SS, V0, rho, AA, model, ZZ_ini, WW_ini, phi_ini, eps_thre, eps_abs, eps_rel, max_iter, Z_max_iter, Z_conv_abs, Z_conv_rel, verbose)
