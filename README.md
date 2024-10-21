@@ -84,9 +84,9 @@ optModel = model_sele(resList, n, step = 3, model = "LN")
 data("gar1")
 A.tr = gar1$A.tr # True adjacency matrix
 LN = gar1$LN # True (normalized) graph Laplacian
-gar1 = gar1$data # Simulated data
-theta0.tr = 1 
-theta1.tr = 2
+gar1_data = gar1$data # Simulated data
+theta0.tr = gar1$theta0 # True graph filter parameter
+theta1.tr = gar1$theta1 # True graph filter parameter
 
 ### extract p and n
 n = nrow(gar1)
@@ -109,15 +109,18 @@ fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
 ### Model selection via eBIC (Step 2 and Step 3)
 fit.gar1.2 = model_selec(fit, n, step = 2, model)
+gar1_fitted.2 = fit.gar1.2$model.selec
+
 fit.gar1.3 = model_selec(fit, n, step = 3, model)
+gar1_fitted.3 = fit.gar1.3$model.selec
 
 ### Evaluate Estimation Errors for theta0, L, and FDR, Power
 
-theta0.err.2 = abs(fit.gar1.2$model.selec$theta0 - theta0.tr)^2
-theta0.err.3 = abs(fit.gar1.3$model.selec$theta0 - theta0.tr)^2
+theta0.err.2 = abs(gar1_fitted.2$theta0 - theta0.tr)^2
+theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
 
-L.err.2 = sum((fit.gar1.2$model.selec$L*fit.gar1.2$model.selec$theta1 - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
-L.err.3 = sum((fit.gar1.3$model.selec$L*fit.gar1.3$model.selec$theta1 - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
+L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
+L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum(theta1.tr*LN^2)
 
 FDR.2 = sum(fit.gar1.2$A.net.e*(1-A.tr))/sum(fit.gar1.2$A.net.e)
 FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)
