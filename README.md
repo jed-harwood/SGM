@@ -111,9 +111,14 @@ FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)
 Power.2 = sum(fit.gar1.2$A.net.e*A.tr)/sum(A.tr)
 Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
 
+## Network sizes
+net.size.2 = sum(fit.gar1.2$A.net.e)/2
+net.size.3 = sum(fit.gar1.3$A.net.e)/2
+
 ## View results 
 c(theta0.err.2, theta0.err.3) # theta0 errors
 c(L.err.2, L.err.3) # L errors
+c(net.size.2, net.size.3) # network sizes
 c(Power.2, Power.3) # Power
 c(FDR.2, FDR.3) # FDR
 
@@ -121,6 +126,7 @@ c(FDR.2, FDR.3) # FDR
 ## p=100; n=100; true network size = 105; 
 ## theta0: 0.06893404 0.00967012
 ## L: 0.03392529 0.01916969
+## Sizes: 101 103
 ## Power: 0.9047619 0.9238095
 ## FDR: 0.05940594 0.05825243
 ```
