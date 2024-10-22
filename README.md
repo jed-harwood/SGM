@@ -54,6 +54,9 @@ For more information on the `GAR1_gf`, `GAR1_fit` and `model_selec` functions, r
 
 ### Fit `GAR(1)` to the simulated `gar1` data. 
 ```
+### load libraries
+library(SGM)
+
 ### See ?gar1 for more information
 data("gar1")
 
