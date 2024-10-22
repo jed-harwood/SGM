@@ -42,7 +42,7 @@ To load a dataset into the working environment, run `data("<dataname>")`.  For m
 
 `gar1`:  A list object that contains:
 1. `data`: data simulated under a `GAR(1)` model.
-2. `A.tr`: the true adjacency matrix for the underlying graph.
+2. `A.tr`: the true weighted adjacency matrix for the underlying graph.
 3. `LN`: the true normalized graph Laplacian matrix.
 4. `theta0`, `theta1`: the true graph filter parameters.  
 
@@ -78,7 +78,7 @@ rho.v=pmax(lambda.v, 0.01)
 ### Get sample covariance 
 S = var(gar1_data)*(n-1)/n
 
-### Goodness of Fit Test
+### Goodness-of-fit measure
 GAR1_gf(S, n, lambda.v[1], num.thread = 2)
 
 ### Fit GAR(1) (up to step 3)
@@ -93,7 +93,8 @@ gar1_fitted.3 = fit.gar1.3$model.selec
 
 ### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 ## Get ground truth
-A.tr = gar1$A.tr > 0 # True adjacency matrix
+A.tr = gar1$A.tr > 0 # True 0-1 adjacency matrix
+diag(A.tr)=0
 LN = gar1$LN # True (normalized) graph Laplacian
 theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
