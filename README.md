@@ -83,8 +83,6 @@ S = var(gar1_data)*(n-1)/n
 ### Goodness of Fit Test
 GAR1_gf(S, n, lambda.v[1], num.thread = 2)
 
-### Output: "p-value:" 1
-
 ### Fit GAR(1) (up to step 3)
 fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
