@@ -104,9 +104,7 @@ GAR1_gf = function(S, nobs, lambda.v, rho.v=lambda.v, eps_thre = 1e-6, eps_abs =
   
   ## Calculate vector of whether obs is greater than boot
   pvals = log.like.obs > log.like.boot
-  
-  ## DEBUG: Check fits
-  print(length(pvals))
+
   
   ## Return mean (p-value)
   print("p-value:")
