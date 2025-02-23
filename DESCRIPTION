@@ -2,7 +2,7 @@ Package: SGM
 Type: Package
 Title: Learn Latent Graphs from Stationary Signals
 Version: 1.0
-Date: 2024-10-09
+Date: 2025-02-22
 Author: Jedidiah Harwood, Jie Peng
 Maintainer: Jedidiah Harwood <jedharwood@ucdavis.edu>
 Description: Provides a set of methods that learn a latent graph, from stationary signals.
@@ -12,8 +12,20 @@ Imports:
   doParallel (>= 1.0.8),
   foreach (>= 1.2.0),
   gmp (>= 0.7-4),
-  mnormt (>= 2.1.1)
+  mnormt (>= 2.1.1),
+  quadprog (>= 1.5-8)
 LinkingTo: Rcpp, RcppEigen, BH
 NeedsCompilation: yes
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Collate: 
+    'ADMM_GAR1_Deg_L.R'
+    'ADMM_GAR1_fit_proc_package.R'
+    'ADMM_GAR1_model_select_extra.R'
+    'RcppExports.R'
+    'SGM.R'
+    'TAR_GAR_fit.R'
+    'dataExample.R'
+    'dataExampleGAR1.R'
+    'dataExampleTARGAR.R'
+    'gf_fit.R'

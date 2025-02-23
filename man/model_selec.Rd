@@ -13,11 +13,12 @@ model_selec(resultList, n, step = 3, model = "LN")
 
 \item{step}{2 or 3; How many steps were used to fit the model.  Requires that at least step 2 was used for \code{GAR1_fit}.}
 
-\item{model}{Which model to consider
+\item{model}{Which model was fitted
 \itemize{
 \item \code{"LN"} Normalized graph Laplacian
 \item \code{"L"} Graph Laplacian
 \item \code{"LN.noselfloop"} Normalized graph Laplacian without self-loops.
+\item \verb{"TARGAR} Time-Varying GAR
 }}
 }
 \value{

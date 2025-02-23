@@ -308,10 +308,11 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
 #' @param resultList A list output from `GAR1_fit`
 #' @param n An integer referring to the number of observations
 #' @param step 2 or 3; How many steps were used to fit the model.  Requires that at least step 2 was used for `GAR1_fit`.
-#' @param model Which model to consider
+#' @param model Which model was fitted
 #' * `"LN"` Normalized graph Laplacian
 #' * `"L"` Graph Laplacian
 #' * `"LN.noselfloop"` Normalized graph Laplacian without self-loops. 
+#' * `"TARGAR` Time-Varying GAR
 #' 
 #' @returns A list object
 #' * `model.selec`: A list containing the model with the model chosen by the eBIC criterion.
@@ -322,6 +323,7 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v
 #' @export
 model_selec = function(resultList, n, step = 3, model = "LN"){
   
+  if (model %in% c("LN", "L", "LN.noselfloop")){
   ## extract p, n, and results
   S = resultList$S
   p = nrow(S)
@@ -451,6 +453,57 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
     resultOptimal = result.0S[[index.c[1]]][[index.c[2]]]
     A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
     ebic.opt = ebic.0S[index.c]
+  }
+  } else {
+    p = nrow(resultList$refit[[1]][[1]]$A.net) ## Extract dimensionality
+    n.lambda.v = length(resultList$refit) ## Tuning parameter dimensions
+    n.net.thre = length(resultList$refit[[1]])
+    loglike.0S = matrix(NA, nrow = n.lambda.v, ncol = n.net.thre) ## Storage matrices
+    bic.0S = loglike.0S
+    ebic.0S = loglike.0S
+    
+    ## set gamma for ebic
+    if(p/n>0.5){## e.g., for p=100,n=100
+      gamma=1  ## eBIC parameter: p/n~1 set as 1; when p/n<0.5: set as 0.5 
+    }else{
+      gamma=0.5
+    }
+    
+    ## Number of edges possible 
+    P.total=p*(p-1)/2
+    
+    for (j in 1:n.lambda.v){
+      for (k in 1:n.net.thre){
+        ## Extract results for every combination of tuning parameters
+        result.c = resultList$refit[[j]][[k]]
+        
+        ## Extract relevant info
+        S.c = result.c$S ## Sample Covariance of Residuals using Final Pass (pre-refit) estimate of R1
+        A.c = result.c$A.net # Zero-pattern for network
+        net.size.c = sum(A.c)/2 # Estimatedx network size
+        L.est = result.c$result.0S$L # 3 step L est
+        eta0.est = result.c$eta0.0S # refitted eta0 using Step 3 L
+        eta1.est = result.c$eta1.0S # refitted eta1 using Step 3 L
+        R1.est = result.c$R1.0S # refitted R1 using eta0, eta1, and L from step 3 of GAR
+        theta0.est = result.c$result.0S$theta0 # refitted theta0
+        theta1.est = result.c$result.0S$theta1 # refitted theta1
+        
+        ##############
+        ebic.term=2*gamma*(lfactorial(P.total)-lfactorial(net.size.c)-lfactorial(P.total-net.size.c))
+        ###############
+        
+        loglike.0S[j,k] = LogLike(S=S.c, theta0=theta0.est , theta1 = theta1.est, L.est, n-1)
+        bic.0S[j,k] = BIC(loglike.0S[j,k], n-1, net.size.c+3) ##here sample size is n-1!! (Do not account for the p components of v0)
+        ebic.0S[j,k] = bic.0S[j,k] + ebic.term          
+      }
+    }
+    
+    ## select model with lowest eBIC
+    index.c = which(ebic.0S == min(ebic.0S, na.rm = T), arr.ind = T)
+    ebic.opt = ebic.0S[index.c[1], index.c[2]] ## Optimal eBIC
+    resultOptimal = resultList$refit[[index.c[1]]][[index.c[2]]] ## Optimal model
+    A.0.net.opt = resultOptimal$A.net ## Zero-Pattern
+  
   }
   
   
