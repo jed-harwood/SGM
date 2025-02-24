@@ -136,6 +136,75 @@ c(FDR.2, FDR.3) # FDR
 ## FDR: 0.05940594 0.05825243
 ```
 
+### Fit `TARGAR` to the simulated `targar` data
+```
+### load libraries
+library(SGM)
+
+### See ?gar1 for more information
+data("targar")
+
+### Get data 
+targar1_dat = targar$data
+t = nrow(targar1_dat) # Sample Size
+p = ncol(targar1_dat) # Dimensionality
+
+### Set tuning parameters: lambda and net.thre sequence
+C.v=c(1,0.5)  
+lambda.v=C.v*sqrt(log(p)/(t-1))
+
+C.thre=exp(seq(log(1),log(0.05), length.out=10))
+net.thre=C.thre*sqrt(log(p)/(t-1))
+
+### Set ADMM parameter 
+rho.v=pmax(lambda.v, 0.01)
+
+### Fit TARGAR with 3-passes
+fit = TARGAR_fit(targar1_dat, lambda.v, net.thre, rho.v, num.pass = 3)
+
+
+### Model selection via eBIC for TARGAR Estimates
+fit.targar = model_selec(fit, t, model = "TARGAR")
+targar1_fitted = fit.targar$model.selec
+targar1_est = targar1_fitted$result.0S
+
+### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
+## Get ground truth
+A.tr = targar$A.tr > 0 # True 0-1 adjacency matrix
+diag(A.tr)=0
+LN = targar$LN # True (normalized) graph Laplacian
+theta0.tr = targar$theta0 # True graph filter parameter
+theta1.tr = targar$theta1 # True graph filter parameter
+
+## Calculate estimation errors
+theta0.err = abs(targar1_est$theta0 - theta0.tr)^2
+L.err = sum((targar1_est$theta1 * targar1_est$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
+
+## Calculate FDR and Power 
+FDR = sum(targar1_fitted$A.net*(1-A.tr))/sum(targar1_fitted$A.net)
+
+Power = sum(targar1_fitted$A.net*A.tr)/sum(A.tr)
+
+## Network sizes
+net.size.est = sum(targar1_fitted$A.net)/2
+
+## View results 
+(theta0.err) # theta0 errors
+(L.err) # L errors
+(net.size.est) # network sizes
+(Power) # Power
+(FDR) # FDR
+
+## Results:
+## p=100; n=100; true network size = 105; 
+## theta0: 0.01596504
+## L: 0.02927149
+## Size: 101
+## Power: 0.9428571
+## FDR: 0.01980198
+```
+
+
 ***
 
 ## Contact
