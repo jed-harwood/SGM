@@ -103,7 +103,7 @@ step.0 <-function(data, R1){
   ## R1: p by p TAR filter 
   ## return: S: p by p sample covariance of the innovation process U.t= Y.t-R1%*%Y.{t-1}	
   ## theta0: nonnegative scalar
-  
+  n = nrow(data)
   data.pre=data[1:(n-1),] ## (n-1) by p: from t=1,...,n-1
   data.lag=data[2:n,] ##(n-1) by p: from t=2,..,n
   residual=data.lag-data.pre%*%R1 ## (n-1) by p: innovation process  
