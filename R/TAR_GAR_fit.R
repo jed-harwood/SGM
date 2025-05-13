@@ -174,7 +174,7 @@ step.0 <-function(data, R.list, lags=1){
   }
   R1 = R.list[[1]]
   if (lags == 1){
-    residual=data.lag-data.pre%*%R1 ## (n-1) by p: innovation process 
+    residual=data.lag1-data.pre%*%R1 ## (n-1) by p: innovation process 
   } else if (lags == 2){
     R2 = R.list[[2]]
     residual=data.lag2-data.pre%*%R1-data.lag1%*%R2 ## (n-2) by p: innovation process 
