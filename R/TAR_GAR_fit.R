@@ -495,12 +495,12 @@ step.lap.est = function(data, resList, lags, q, A.net.e, lambda.v, net.thre, ref
       time.refit = time.end - time.start + time.vec[j]
       
       if (lags == 1){
-        resList = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "eta.0S" = eta.vec, "time" = time.refit)
+        res.jk = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "eta.0S" = eta.vec, "time" = time.refit)
       } else if (lags == 2){
-        resList = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "R2.0S" = R2.refit, "eta.0S" = eta.vec, "time" = time.refit)
+        res.jk = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "R2.0S" = R2.refit, "eta.0S" = eta.vec, "time" = time.refit)
       }
       
-      results[[j]][[k]] = resList
+      results[[j]][[k]] = res.jk
     
     }
   }
