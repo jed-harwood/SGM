@@ -477,7 +477,7 @@ step.lap.est = function(data, resList, lags, q, A.net.e, lambda.v, net.thre, ref
         L.est = refit.2$L * refit.2$theta1
         theta0.est = theta0.c
       }
-      eta.refit = step.2(data = data, L = L.est, theta0 = theta0.est, lags=lags, q=q, eps_thre = eps_thre)
+      eta.refit = step.2(data = data, L = L.est, theta0 = theta0.est, lags=lags, q=q, eps = eps_thre)
       
       ## Step 3 of TAR-GAR: Refit R1
       eta.vec = eta.refit$eta
