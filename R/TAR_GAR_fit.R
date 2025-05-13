@@ -1,8 +1,7 @@
 ###############################
 ## TAR-GAR Fitting Functions
-## Added: 2025-02-22
-## TAR GAR Fitting Procedure and Necessary Functions;
-## Using Version A of Fitting Procedure
+## Added: 2025-05-13
+## TAR GAR (p,q) Fitting Procedure and Necessary Functions;
 ###############################
 
 
@@ -11,17 +10,18 @@
 ### PREREQUISITE FUNCTIONS  ###
 ###############################
 
-#' Calculate sample auto-covariance matrix at lag=`order`
+#' Calculate sample auto-covariance matrix at lag=`order` for p=1 case
 #' 
 #' @description
 #' Calculates the sample autocovariance matrix at a specified lag/ordering.
 #' 
 #' @param data n by p data matrix
 #' @param order nonnegative integer
+#' @param lags Order of temporal depencency
 #' 
 #' @returns Returns a p-by-p symmetric matrix.
 #' 
-AutoCov<-function(data, order=0){
+AutoCov<-function(data, order=0, lags=1){
   ## data: n by p data matrix
   ## order: nonnegative integer 
   ## return: Gamma_order: p by p symmetric matrix 
@@ -41,11 +41,38 @@ AutoCov<-function(data, order=0){
   data.c.lag=data.c[(1+order):n, ]
   
   result=(t(data.c.pre)%*%data.c.lag)/(n-order) ## Gamma_order: when order=0, this should be the same as var(data)*(n-1)/n
+  
+  if(lags == 1 || order == 0)
   result=(result+t(result))/2 ## symmetrizing 
   
   return(result) 
   
 }
+
+
+###
+## New: Stack the Y_t on-top of one-another so that Gamma0.tilde and Gamma1.tilde can be found.  
+## 
+Stack.targar2q = function(data){
+  ## data: n by p data matrix
+  ## return: data matrix for stacked process
+  
+  n = nrow(data) ## sample size 
+  p = ncol(data) ## dimension
+  
+  ## Storage for new data; each row is (Y_i', Y_i-1') 
+  dataStack = matrix(NA, nrow = n-1, ncol = 2*p) 
+  
+  for (i in 2:n){
+    Y_t = data[i,]
+    Y_t_1 = data[i-1,]
+    Y_ast_t = c(Y_t, Y_t_1)
+    dataStack[i-1,] = Y_ast_t
+  }
+  
+  return(dataStack)
+}
+
 
 
 #' Initial Estimate of Filter Matrix
@@ -54,15 +81,17 @@ AutoCov<-function(data, order=0){
 #' Calculates an initial estimate of the graph filter matrix R1. 
 #' 
 #' @param data An n by p data matrix
+#' @param lags Order of temporal dependency
 #' @param eps.thre Threshold for pseudoinverse of Gamma0
 #' 
-#' @returns A p by p symmetrix matrix
+#' @returns A list of p by p symmetrix matrices
 
-step.00 <-function(data,  eps.thre=1e-6){
+step.00 <-function(data, lags=1, eps.thre=1e-6){
   ## data: n by p data matrix
   ##  eps.thre: threshold for pseudo inverse of Gamma0
   ##  return: R1 : p by p symmetric
   
+  if (lags == 1){
   p=ncol(data)
   ##
   Gamma0=AutoCov(data, order=0)
@@ -79,10 +108,41 @@ step.00 <-function(data,  eps.thre=1e-6){
   ## R1 estimate 
   Gamma1=AutoCov(data, order=1)
   R1=Gamma0.neg0.5%*%Gamma1%*%Gamma0.neg0.5
-  R1=(R1+t(R1))/2 ## remove asymmetry due to rounding error 
+  R1=(R1+t(R1))/2 ## remove asymmetry due to rounding error
+  R.List = list("R1" = R1)
+  } else if (lags == 2){
+    
+    p=2*ncol(data) # All matrices involved are 2*p x 2*p
+    n=nrow(data)
+    
+    ## Create stacked version of process and find autocov
+    data_stacked = Stack.targar2q(data)
+    
+    ##
+    Gamma0=AutoCov(data_stacked, order=0)
+    Gamma0.eigen=eigen(Gamma0, symmetric=TRUE)
+    
+    Gamma0.lam=Gamma0.eigen$values
+    Gamma0.lam=pmax(Gamma0.lam,0) ## remove small negative values due to rounding error  
+    
+    ## Gamma0^{-0.5}: use pseudo inverse when Gamma0 is singular 
+    Gamma0.lam.neg0.5=numeric(p)
+    Gamma0.lam.neg0.5[Gamma0.lam>eps.thre]=(Gamma0.lam[Gamma0.lam>eps.thre])^{-0.5}
+    Gamma0.neg0.5=(Gamma0.eigen$vectors)%*%diag(Gamma0.lam.neg0.5)%*%t(Gamma0.eigen$vectors)
+    
+    ## A estimate 
+    Gamma1=AutoCov(data_stacked, order=1)
+    A=Gamma0.neg0.5%*%Gamma1%*%Gamma0.neg0.5
+    #Jed Note: Here, A is not symmetric!!!!!!A=(A+t(A))/2 ## remove asymmetry due to rounding error 
+    
+    R1=A[1:(p/2), 1:(p/2)]
+    R2 = A[1:(p/2), -c(1:(p/2))]
+    
+    R.List = list("R1" = R1, "R2" = R2)
+  }
   
   ##
-  return(R1)
+  return(R.List)
 }
 
 
@@ -92,23 +152,35 @@ step.00 <-function(data,  eps.thre=1e-6){
 #' Calculates the sample covariance of the innovation process, and the corresponding theta0 estimate, given a filter matrix R1
 #' 
 #' @param data n by p matrix
-#' @param R1 p by p matrix
+#' @param R.List A list containing 1-to-3 p by p matrices
+#' @param lags Either 1, 2, or 3; Order of temporal dependency
 #' 
 #' @returns A list containing:
 #' * `S`: A p by p sample covariance matrix of the innovation process
 #' * `theta0`: A positive number
 #' 
-step.0 <-function(data, R1){
+step.0 <-function(data, R.list, lags=1){
   ## data: n by p data matrix
   ## R1: p by p TAR filter 
   ## return: S: p by p sample covariance of the innovation process U.t= Y.t-R1%*%Y.{t-1}	
   ## theta0: nonnegative scalar
-  n = nrow(data)
-  data.pre=data[1:(n-1),] ## (n-1) by p: from t=1,...,n-1
-  data.lag=data[2:n,] ##(n-1) by p: from t=2,..,n
-  residual=data.lag-data.pre%*%R1 ## (n-1) by p: innovation process  
+  lags = length(R.list)
   
-  S=var(residual)*(n-2)/(n-1)
+  n = nrow(data)
+  data.pre=data[1:(n-lags),] ## (n-1) by p: from t=1,...,n-1
+  data.lag1=data[2:(n+1-lags),] ##(n-1) by p: from t=2,..,n
+  if (lags > 1){
+    data.lag2=data[3:(n+2-lags),] ## (n-2) by p: from t =3,..., n
+  }
+  R1 = R.list[[1]]
+  if (lags == 1){
+    residual=data.lag-data.pre%*%R1 ## (n-1) by p: innovation process 
+  } else if (lags == 2){
+    R2 = R.list[[2]]
+    residual=data.lag2-data.pre%*%R1-data.lag1%*%R2 ## (n-2) by p: innovation process 
+  }
+  
+  S=var(residual)*(length(residual)-1)/length(residual)
   theta0=(max(eigen(S, symmetric=TRUE)$values))^{-0.5}
   
   return(list(S=S, theta0=theta0))
@@ -119,17 +191,21 @@ step.0 <-function(data, R1){
 #' Step 2 of TAR-GAR Fitting Procedure
 #' 
 #' @description
-#' Estimate the filter parameters (eta0, eta1) given (theta0, L), through a quadratic program with linear inequality constraints
+#' Estimate the filter parameters (eta) given (theta0, L), through a quadratic program with linear inequality constraints
 #' 
 #' @param data An n by p data matrix
 #' @param L A p by p (normalized) Laplacian Matrix
 #' @param theta0 A positive number
+#' @param lags Order of temporal dependency (either 1, 2, or 3)
+#' @param q: positive integer; order of each polynomial in L to fit for R matrices
 #' @param eps A (small) positive number
 #' @importFrom quadprog solve.QP
-step.2 <- function(data, L, theta0, eps=1e-6){
+step.2 <- function(data, L, theta0, lags=1, q=1, eps=1e-6){
   ## data: n by p data matrix
   ## L: p by p Laplacian; p.s.d.
   ## theta0: positive scalar 
+  ## lags: order of temporal dependency
+  ## q: positive integer; order of each polynomial in L to fit for R1 and R2
   ## eps: small positive values to bound |eta0+eta1*lambda_j|<= 1-eps
   ## center data:
   n=nrow(data)
@@ -147,59 +223,129 @@ step.2 <- function(data, L, theta0, eps=1e-6){
   data.tilde= data.c%*%t(Q)
   
   ## Gamma0 and Gamma1 of the transformed data 
-  Gamma0 = t(data.tilde[2:n,])%*%data.tilde[2:n,]/(n-1)
-  Gamma1 = t(data.tilde[2:n,])%*%data.tilde[1:(n-1),]/(n-1)
-  Gamma1 = (Gamma1+t(Gamma1))/2
-  
-  ## QP components
-  ## dvec 
-  d.1= 2*sum((theta0+lambda)^2*diag(Gamma1))
-  d.2= 2*sum(lambda*(theta0+lambda)^2*diag(Gamma1))
-  d=c(d.1,d.2)
-  
-  #Dmat
-  d.11= 2*sum((theta0+lambda)^2*diag(Gamma0))
-  d.22= 2*sum(lambda^2*(theta0+lambda)^2*diag(Gamma0))
-  d.12= 2*sum(lambda*(theta0+lambda)^2*diag(Gamma0))
-  D=matrix(c(d.11, d.12, d.12, d.22), 2,2)
-  
-  #Amat: 2 by (2p) 
-  A.left=rbind(rep(1,p), lambda)
-  A.right=-A.left
-  A=cbind(A.left, A.right)
-  
-  #bvec: (2p) by 1 
-  b=rep(-1,2*p)+eps
-  
-  # minimize -d^T eta + 1/2*eta^T D eta subject: A^T eta >= b
-  result=try(solve.QP(Dmat=D, dvec=d, Amat=A, bvec=b))
-  if(is(result, "try-error")){
-    return(NULL)
+  if (lags == 1){## Gamma0 and Gamma1 of the transformed data 
+    Gamma0 = t(data.tilde[2:n,])%*%data.tilde[2:n,]/(n-1)
+    Gamma1 = t(data.tilde[2:n,])%*%data.tilde[1:(n-1),]/(n-1)
+    Gamma1 = (Gamma1+t(Gamma1))/2
     
-  }else{
-    # return eta and R1
-    eta = result$solution
-    R1=diag(eta[1],p)+eta[2]*L
+    ## dvec (new)
+    d = rep(0, q+1)
+    
+    ##Dmat (new) Note: D is a symmetric, p.d. matrix!  
+    D = matrix(0, nrow = q+1, ncol = q+1)
+    for (j in 1:(q+1)){
+      d[j] = 2*sum(lambda^(j-1)*(theta0 + lambda)^2*diag(Gamma1))
+      for(k in 1:(q+1)){
+        D[j,k]=2*sum(lambda^((j-1) + (k-1))*(theta0+lambda)^2*diag(Gamma0)) # Create cycle
+      }
+    }
+    
+    
+    #Amat (new): (q+1) by (2p)
+    A = matrix(0, nrow = q+1, ncol = 2*p)
+    for (j in 1:(q+1)){
+      A[j, 1:p] = lambda^(j-1)
+      A[j, (p+1):(2*p)] = (-1)*lambda^(j-1)
+    }
+    
+    #bvec: (2p) by 1 
+    b=rep(-1,2*p)+eps
+    
+    # minimize -d^T eta + 1/2*eta^T D eta subject: A^T eta >= b
+    result=try(solve.QP(Dmat=D, dvec=d, Amat=A, bvec=b))
+    if(is(result, "try-error")){
+      return(NULL)
+      
+    }else{
+      # return eta and R1
+      eta = result$solution
+      R1 = diag(eta[1], p)
+      for (j in 2:(q+1)){
+        R1 = R1 + eta[j]*(t(Q) %*% diag(lambda^(j-1)) %*% Q) ## R1 + eta_j L^(j-1)
+      }
+      R.list = list("R1" = R1)
+    }
+  } else if (lags == 2){
+    ## Gamma0 Gamma1, and Gamma2 of the transformed data 
+    Gamma0.1 = t(data.tilde[2:(n-1),])%*%data.tilde[2:(n-1),]/(n-2) # Order 0 autocovariance using points 2-to-n-1
+    Gamma0.2 = t(data.tilde[1:(n-2),])%*%data.tilde[1:(n-2),]/(n-2) # Order 0 autocovariance using points 1-to-n-2
+    Gamma1.01 = t(data.tilde[3:n,])%*%data.tilde[2:(n-1),]/(n-2) # Order 1 autocovariance using lag 1 and lag 0 points
+    Gamma1.01 = (Gamma1.01+t(Gamma1.01))/2
+    Gamma1.12 = t(data.tilde[2:(n-1),])%*%data.tilde[1:(n-2),]/(n-2) # Order 1 autocovariance using lag 1 and lag 2 points
+    Gamma1.12 = (Gamma1.12+t(Gamma1.12))/2
+    Gamma2 = t(data.tilde[3:n,])%*%data.tilde[1:(n-2),]/(n-2) # Order 2 autocovariance
+    Gamma2 = (Gamma2+t(Gamma2))/2
+    
+    ## dvec (new)
+    d = rep(0, 2*(q+1))
+    d.1 = rep(0, q+1)
+    d.2 = rep(0, q+1)
+    
+    ##Dmat (new) Note: D is a symmetric, p.d. matrix!  
+    D = matrix(0, nrow = 2*(q+1), ncol = 2*(q+1))
+    
+    ## Initialize Blocks of D Matrix 
+    D11 = matrix(0, nrow = q+1, ncol = q+1)
+    D12 = D11
+    D22 = D12
+    
+    
+    for (j in 1:(q+1)){
+      d.1[j] = 2*sum(lambda^((j-1))*(theta0 + lambda)^2*diag(Gamma1.01))
+      d.2[j] = 2*sum(lambda^((j-1))*(theta0 + lambda)^2*diag(Gamma2))
+      for (k in 1:(q+1)){
+        D11[j,k]=2*sum(lambda^((j-1) + (k-1))*(theta0+lambda)^2*diag(Gamma0.1))
+        D12[j,k]=2*sum(lambda^((j-1) + (k-1))*(theta0+lambda)^2*diag(Gamma1.12))
+        D22[j,k]=2*sum(lambda^((j-1) + (k-1))*(theta0+lambda)^2*diag(Gamma0.2))
+      }
+    }
+    d = c(d.1, d.2)
+    D = rbind(cbind(D11, D12), cbind(t(D12), D22))
+    
+    
+    #Amat (new): 2(q+1) by (4p)
+    A = matrix(0, nrow = 2*(q+1), ncol = 4*p)
+    cons.block = matrix(0, nrow = q+1, ncol = p)
+    for (j in 1:(q+1)){
+      cons.block[j,] = lambda^(j-1)
+    }
+    A[1:(q+1),1:p] = (-1)*cons.block
+    A[(q+2):(2*(q+1)),1:p] = (-1)*cons.block
+    A[1:(q+1),(p+1):(2*p)] = cons.block
+    A[(q+2):(2*(q+1)),(p+1):(2*p)] = (-1)*cons.block
+    A[(q+2):(2*(q+1)),(2*p+1):(3*p)] = (-1)*cons.block
+    A[(q+2):(2*(q+1)),(3*p+1):(4*p)] = cons.block
+    
+    #bvec: (2p) by 1 
+    b=rep(-1,4*p)+eps
+    
+    # minimize -d^T eta + 1/2*eta^T D eta subject: A^T eta >= b
+    result=try(solve.QP(Dmat=D, dvec=d, Amat=A, bvec=b))
+    if(is(result, "try-error")){
+      return(NULL)
+      
+    }else{
+      # return eta and R1
+      eta = result$solution
+      R1 = diag(eta[1], p)
+      R2 = diag(eta[q+2],p)
+      for (j in 2:(q+1)){
+        R1 = R1 + eta[j]*(t(Q) %*% diag(lambda^(j-1)) %*% Q) ## R1 + eta_j L^(j-1)
+        R2 = R2 + eta[q+1+j]*(t(Q) %*% diag(lambda^(j-1)) %*% Q) ## R1 + eta_j L^(j-1)
+      }
+      R.list = list("R1" = R1, "R2" = R2)
+    }
+    A = rbind(cbind(R1, R2), cbind(diag(1,p), diag(0,p)))
+    if(!all(abs(eigen(A, only.values = T)$values)<1)){
+      message("Not stationary!")
+    } 
   }
   
   #
-  return(list(result=result, eta=eta, R1=R1))
+  return(list(result=result, eta=eta, "R.list"=R.list))
 }
 
 
-#' Step 3 of TAR-GAR Fitting Procedure
-#' 
-#' @description
-#' Update R1  given the estimated (eta0, eta1) and L parameters from steps 0-to-2.
-#' 
-#' @param eta0 A number
-#' @param eta1 A number
-#' @param L A p-by-p matrix
-step.3 = function(eta0, eta1, L){
-  p = nrow(L)
-  R1 = diag(eta0, p)+eta1*L
-  return(R1)
-}
 
 ##########################################################################
 ## Extra Step: Re-estimate Final-Pass L using net.thre values, 
@@ -241,6 +387,8 @@ step.thre = function(resList, lambda.v, net.thre){
 #' 
 #' @param data An n-by-p matrix
 #' @param resList A list
+#' @param lags A positive integer; order of temporal dependency
+#' @param q A positive integer
 #' @param A.net.e A p-by-p matrix
 #' @param lambda.v A vector of positive numbers
 #' @param net.thre A vector of (small) positive numbers
@@ -252,10 +400,10 @@ step.thre = function(resList, lambda.v, net.thre){
 #' @param max_iter A large integer
 #' @param verbose A boolean
 #' @param timevec A vector
-step.lap.est = function(data, resList, A.net.e, lambda.v, net.thre, refit = 2, model = "LN", eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, verbose = FALSE, time.vec){
+step.lap.est = function(data, resList, lags, q, A.net.e, lambda.v, net.thre, refit = 2, model = "LN", eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, verbose = FALSE, time.vec){
   results = vector(mode = "list", length = length(lambda.v))
   p = ncol(data) 
-  n = nrow(data) - 1
+  n = nrow(data) - lags
   ini.mat = matrix(0, p, p)
   ini.vec = rep(0,p)
   
@@ -329,12 +477,16 @@ step.lap.est = function(data, resList, A.net.e, lambda.v, net.thre, refit = 2, m
         L.est = refit.2$L * refit.2$theta1
         theta0.est = theta0.c
       }
-      eta.refit = step.2(data = data, L = L.est, theta0 = theta0.est, eps = eps_thre)
+      eta.refit = step.2(data = data, L = L.est, theta0 = theta0.est, lags=lags, q=q, eps_thre = eps_thre)
       
       ## Step 3 of TAR-GAR: Refit R1
-      eta.0.refit = eta.refit$eta[1]
-      eta.1.refit = eta.refit$eta[2]
-      R1.refit = step.3(eta.0.refit, eta.1.refit, L.est) # L.est has already absorbed theta1
+      eta.vec = eta.refit$eta
+      R1.refit = eta.refit$R1 # L.est has already absorbed theta1
+      
+      if(lags > 1){
+        R2.refit = eta.refit$R2
+      }
+      
       
       ## time for refitting (end)
       time.end = proc.time()[3]
@@ -342,8 +494,14 @@ step.lap.est = function(data, resList, A.net.e, lambda.v, net.thre, refit = 2, m
       ## time for refitting
       time.refit = time.end - time.start + time.vec[j]
       
-      results[[j]][[k]] = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "eta0.0S" = eta.0.refit, "eta1.0S" = eta.1.refit, "time" = time.refit)
+      if (lags == 1){
+        resList = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "eta.0S" = eta.vec, "time" = time.refit)
+      } else if (lags == 2){
+        resList = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "R2.0S" = R2.refit, "eta.0S" = eta.vec, "time" = time.refit)
+      }
       
+      results[[j]][[k]] = resList
+    
     }
   }
   
@@ -360,6 +518,8 @@ step.lap.est = function(data, resList, A.net.e, lambda.v, net.thre, refit = 2, m
 #' Using the TAR-GAR fitting procedure, infers the (normalized) graph Laplacian matrix of a latent graph from temporally dependent data.  Fits to a sequence of tuning parameters (`lambda.v`, `net.thre`).  
 #' 
 #' @param data An n-by-p matrix
+#' @param lags Either 1, 2, or 3; Order of temporal dependency
+#' @param q A positive integer; The filter matrices' order of polynomial in L.
 #' @param lambda.v A vector of positive numbers.  These values are tuning parameters for the TAR-GAR procedure.
 #' @param net.thre A vector of positive numbers.  These values are tuning parameters for the TAR-GAR procedure. 
 #' @param rho.v A vector of positive numbers.  The step size for the ADMM algorithm.  Set to `lambda.v` by default.
@@ -381,7 +541,7 @@ step.lap.est = function(data, resList, A.net.e, lambda.v, net.thre, refit = 2, m
 #' 
 #' @example man-roxygen/TARGAR_fit_example.R
 #' @export
-TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  model = "LN", eps.thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, refit=2, verbose = F){
+TARGAR_fit = function(data, lags = 1, q = 1, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  model = "LN", eps.thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, refit=2, verbose = F){
   
   ## Start Time
   time.tot.beg = proc.time()[3]
@@ -395,8 +555,9 @@ TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  m
   n = nrow(data)
   
   ## Step 00
-  R1.fit = step.00(data, eps.thre)
-  R1.ini = R1.fit
+  R.fit = step.00(data, eps.thre)
+  R.ini = R.fit
+
   print("Step 00 Complete")
   
   for (j in 1:length(lambda.v)){
@@ -407,7 +568,7 @@ TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  m
       
       
       ## Step 0
-      fit.S.theta0 = step.0(data, R1.fit)
+      fit.S.theta0 = step.0(data = data, lags = lags, R.list = R.fit)
       S.i = fit.S.theta0$S
       theta0.i = fit.S.theta0$theta0
       print("step 0 complete")
@@ -436,13 +597,12 @@ TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  m
       
       ## Step 2
       #if (i == 1){ ## To match with Dr. Peng's code.  Better results for R1 if we remove the if statement. 
-      fit.eta = step.2(data, L = L.i, theta0 = theta0.i, eps = eps.thre)
+      fit.eta = step.2(data, lags = lags, q=q, L = L.i, theta0 = theta0.i, eps = eps.thre)
       print("step 2 complete")
       
       ## Step 3
-      eta.0 = fit.eta$eta[1]
-      eta.1 = fit.eta$eta[2]
-      R1.fit = step.3(eta.0, eta.1, L.i)
+      eta = fit.eta$eta
+      R.fit = fit.eta$R.list
       
       print("step 3 complete")
       #}
@@ -450,17 +610,30 @@ TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  m
       
       ## For eval purposes, store 1-pass estimates 
       if (i == 1){
-        iniRes[[j]] = list("R1.ini" = R1.ini, "L.ini" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1, "eta.ini" = c(eta.0,eta.1), "S.ini" = S.i, "theta0.ini" = theta0.i, "conv.step1" = conv.step.1.i)
+        if (lags == 1){
+          iniList = list("R1.ini" = R.ini$R1, "L.ini" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1, "eta.ini" = eta, "S.ini" = S.i, "theta0.ini" = theta0.i, "conv.step1" = conv.step.1.i)
+        } else if (lags == 2){
+          iniList = list("R1.ini" = R.ini$R1, "R2.ini" = R.ini$R2, "L.ini" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1, "eta.ini" = eta, "S.ini" = S.i, "theta0.ini" = theta0.i, "conv.step1" = conv.step.1.i)
+        }
+        iniRes[[j]] = iniList
       }
       
     }
     time.end = proc.time()[3]
     time.vec[j] = time.end - time.start
     
-    resList[[j]] = list("S" = S.i, "theta0" = theta0.i, "L" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1,
-                        "eta" = c(eta.0, eta.1), "R1" = R1.fit, "conv.step1" = conv.step.1.i)
+    if (lags == 1){
+      passList = list("S" = S.i, "theta0" = theta0.i, "L" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1,
+                      "eta" = eta, "R1" = R.fit$R1, "conv.step1" = conv.step.1.i)
+    } else if (lags == 2){
+      passList = list("S" = S.i, "theta0" = theta0.i, "L" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1,
+                      "eta" = eta, "R1" = R.fit$R1, "R2" = R.fit$R2, "conv.step1" = conv.step.1.i)
+    }
+    
+    
+    resList[[j]] = passList
     print(paste("Pass", i, "complete"))
-    R1.fit = R1.ini # Reset for other lambda
+    R.fit = R.ini # Reset for other lambda
     
   }
   
@@ -471,7 +644,7 @@ TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  m
     refit.zero = step.thre(resList, lambda.v, net.thre)
     
     ## Refit L estimates
-    refit.L = step.lap.est(data, resList, refit.zero, lambda.v, net.thre, refit, model, eps.thre, eps_abs, eps_rel, max_iter, verbose, time.vec) # n-1 because that is sample size for innovations
+    refit.L = step.lap.est(data, resList, lags, q, refit.zero, lambda.v, net.thre, refit, model, eps.thre, eps_abs, eps_rel, max_iter, verbose, time.vec) # n-1 because that is sample size for innovations
   }
   
   ## End Time
