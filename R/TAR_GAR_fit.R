@@ -555,7 +555,7 @@ TARGAR_fit = function(data, lags = 1, q = 1, lambda.v, net.thre, rho.v=lambda.v,
   n = nrow(data)
   
   ## Step 00
-  R.fit = step.00(data, eps.thre)
+  R.fit = step.00(data, lags = lags, eps.thre = eps.thre)
   R.ini = R.fit
 
   print("Step 00 Complete")
