@@ -164,8 +164,7 @@ step.0 <-function(data, R.list, lags=1){
   ## R1: p by p TAR filter 
   ## return: S: p by p sample covariance of the innovation process U.t= Y.t-R1%*%Y.{t-1}	
   ## theta0: nonnegative scalar
-  lags = length(R.list)
-  
+
   n = nrow(data)
   data.pre=data[1:(n-lags),] ## (n-1) by p: from t=1,...,n-1
   data.lag1=data[2:(n+1-lags),] ##(n-1) by p: from t=2,..,n
@@ -481,10 +480,10 @@ step.lap.est = function(data, resList, lags, q, A.net.e, lambda.v, net.thre, ref
       
       ## Step 3 of TAR-GAR: Refit R1
       eta.vec = eta.refit$eta
-      R1.refit = eta.refit$R1 # L.est has already absorbed theta1
+      R1.refit = eta.refit$R.list$R1 # L.est has already absorbed theta1
       
       if(lags > 1){
-        R2.refit = eta.refit$R2
+        R2.refit = eta.refit$R.list$R2
       }
       
       
