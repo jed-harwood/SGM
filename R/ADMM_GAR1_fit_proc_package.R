@@ -436,7 +436,7 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
   
   
   ## Select optimal index, depending on which steps used
-    v0.opt = NULL ## <-- new
+    v0.opt = NA ## <-- new
   if(step == 2){
     ## Step 2a: post estimator selection results 
     index.c=which.min(ebic.post)
