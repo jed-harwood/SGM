@@ -454,7 +454,7 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
     resultOptimal = result.0S[[index.c[1]]][[index.c[2]]]
     A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
     v0.opt = v0.0.est[[index.c[1]]][[index.c[2]]] ## <-- new
-    resultOptimal$v0 = v0.opt ## <-- new
+    resultOptimal$v0 = v0.opt ## <-- new 
     ebic.opt = ebic.0S[index.c]
   }
   } else {
