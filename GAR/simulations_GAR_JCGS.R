@@ -21,7 +21,7 @@ library(mnormt)
 
 
 ## Load the Data Generation Script
-source("../GenData.R")
+source("GenData.R")
 
 
 #####################################
