@@ -436,6 +436,7 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
   
   
   ## Select optimal index, depending on which steps used
+    v0.opt = NULL ## <-- new
   if(step == 2){
     ## Step 2a: post estimator selection results 
     index.c=which.min(ebic.post)
@@ -452,6 +453,8 @@ model_selec = function(resultList, n, step = 3, model = "LN"){
     index.c = arrayInd(index.c, .dim = dim(ebic.0S))
     resultOptimal = result.0S[[index.c[1]]][[index.c[2]]]
     A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
+    v0.opt = v0.0.est[[index.c[1]]][[index.c[2]]] ## <-- new
+    resultOptimal$v0 = v0.opt ## <-- new
     ebic.opt = ebic.0S[index.c]
   }
   } else {
