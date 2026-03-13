@@ -16,6 +16,8 @@ rm(list = ls())
 library(SGM)
 library(glasso)
 library(doParallel)
+library(doFuture)
+library(future)
 library(foreach)
 library(mnormt)
 
@@ -28,8 +30,9 @@ source("GenData.R")
 #### Parallel Thread Setup
 ####################################
 num.thread=25
-registerDoParallel(num.thread)
-
+registerDoFuture()
+plan(multisession, workers = num.thread)
+options(future.globals.maxSize = 2 * 1024^3)  # 2 GiB
 
 
 #####################################
@@ -79,7 +82,7 @@ if(model=="LN"||model=="LN.noloop"){ ## normalized Laplacian models
   v0=rep(1,p)
 }
 v0.tr = v0
-
+summary(v0.tr)
 
 ###### Draw Samples from the GAR Model:
 set.seed(5) # For reproducability 
@@ -137,10 +140,12 @@ results.GAR = foreach(i = 1:rep, .maxcombine=max(rep,2))%dopar%{
   
   ## Fit the GAR model to the data
   S.i = var(data[[i]])*((n-1)/n) # Sufficent Statistic for Sigma
-  GAR.i.res = SGM::GAR1_fit(S = S.i, nobs = n, lambda.v = lambda.v, net.thre = net.thre, model = model, rho.v = rho.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, verbose=FALSE)
+  GAR.i.res = SGM::GAR1_fit(S = S.i, nobs = n, lambda.v = lambda.v, net.thre = net.thre,
+                            model = model, rho.v = rho.v, eps_thre = 1e-6, eps_abs = 1e-5,
+                            eps_rel = 1e-3, max_iter_3a = 10000, verbose=FALSE)
   
   ## Store results important results in a list
-  res.i = list("S" = S.i, "conv.0S" = GAR.i.res$conv.0.v0, "result.0S" = GAR.i.res$results.0S,
+  res.i = list("S" = S.i, "conv.0S" = GAR.i.res$conv.0.v0, "result.0S" = GAR.i.res$result.0S,
                "net.size" = GAR.i.res$net.0.size, "modelList"= GAR.i.res, "A.0.net" = GAR.i.res$A.0.net,
                "result.L2.0"=GAR.i.res$result.L2.0)
   
@@ -186,7 +191,7 @@ for (i in 1:rep){
   L.ebic.i = GAR.ebic.i$model.selec$L * GAR.ebic.i$model.selec$theta1 # L * theta_1
   theta0.ebic.i = GAR.ebic.i$model.selec$theta0 # theta0 for the eBIC selected model
   v0.ebic.i = GAR.ebic.i$model.selec$v0 # v0 from eBIC selected model 
-  v0.ebic.i = v0.ebic.i/sqrt(sum(v0.ebic.i^2)) # Renormalize (just-in-case)
+  v0.ebic.i = v0.ebic.i/sqrt(sum(v0.ebic.i^2)) # Renormalize (just-in-case) 
   
   ## Record Error and Evaluation Metrics
   #### GAR Graph Metrics
@@ -194,6 +199,7 @@ for (i in 1:rep){
   L.ebic.err[i] = sum((L.ebic.i-L.tr*theta1.tr)^2)/sum((theta1.tr*L.tr)^2) # L-Error
   theta0.ebic.err[i] = abs(theta0.ebic.i - theta0.tr)^2 # theta0-error
   v0.ebic.err[i] = sum(abs(v0.ebic.i - v0.tr)^2) # v0-error
+  #print(paste("The V0s are equal:", all.equal(v0.ebic.i, v0.tr)))
   power.ebic.vec[i] = sum(A.ebic.i*net.tr)/sum(net.tr) # power
   fdr.ebic.vec[i] = sum(A.ebic.i*(1-net.tr))/sum(A.ebic.i) # fdr
   F1.ebic.vec[i] = (2*(1-fdr.ebic.vec[i])*power.ebic.vec[i])/(1-fdr.ebic.vec[i] + power.ebic.vec[i]) # F1 Score
