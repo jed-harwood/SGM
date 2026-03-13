@@ -137,9 +137,7 @@ results.GAR = foreach(i = 1:rep, .maxcombine=max(rep,2))%dopar%{
   
   ## Fit the GAR model to the data
   S.i = var(data[[i]])*((n-1)/n) # Sufficent Statistic for Sigma
-  GAR.i.res = SGM::GAR1_fit(S = S.i, nobs = n, lambda.v = lambda.v, net.thre = net.thre,
-                            model = model, step = 3, rho.v = rho.v, eps_thre = 1e-6, eps_abs = 1e-5,
-                            eps_rel = 1e-3, max_iter=10000, verbose=FALSE)
+  GAR.i.res = SGM::GAR1_fit(S = S.i, nobs = n, lambda.v = lambda.v, net.thre = net.thre, model = model, rho.v = rho.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, verbose=FALSE)
   
   ## Store results important results in a list
   res.i = list("S" = S.i, "conv.0S" = GAR.i.res$conv.0.v0, "result.0S" = GAR.i.res$results.0S,
