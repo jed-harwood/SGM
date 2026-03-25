@@ -154,6 +154,8 @@ library(SGM)
 
 ### See ?gar1 for more information
 data("gar1")
+str(gar1)
+
 
 ### Get data 
 gar1_data = gar1$data
@@ -179,10 +181,7 @@ S = var(gar1_data)*(n-1)/n
 ### Fit GAR(1) (up to step 3)
 fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
 
-### Model selection via eBIC for Step 2 estimator and Step 3 estimator
-fit.gar1.2 = model_selec(fit, n, step = 2, model)
-gar1_fitted.2 = fit.gar1.2$model.selec
-
+### Model selection via eBIC for the GAR estimator
 fit.gar1.3 = model_selec(fit, n, step = 3, model)
 gar1_fitted.3 = fit.gar1.3$model.selec
 
@@ -195,37 +194,30 @@ theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
 
 ## Calculate estimation errors
-theta0.err.2 = abs(gar1_fitted.2$theta0 - theta0.tr)^2
 theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
-
-L.err.2 = sum((gar1_fitted.2$theta1 * gar1_fitted.2$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
 L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
 
 ## Calculate FDR and Power 
-FDR.2 = sum(fit.gar1.2$A.net.e*(1-A.tr))/sum(fit.gar1.2$A.net.e)
 FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)
-
-Power.2 = sum(fit.gar1.2$A.net.e*A.tr)/sum(A.tr)
 Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
 
 ## Network sizes
-net.size.2 = sum(fit.gar1.2$A.net.e)/2
 net.size.3 = sum(fit.gar1.3$A.net.e)/2
 
 ## View results 
-c(theta0.err.2, theta0.err.3) # theta0 errors
-c(L.err.2, L.err.3) # L errors
-c(net.size.2, net.size.3) # network sizes
-c(Power.2, Power.3) # Power
-c(FDR.2, FDR.3) # FDR
+c(theta0.err.3) # theta0 errors
+c(L.err.3) # L errors
+c(net.size.3) # network sizes
+c(Power.3) # Power
+c(FDR.3) # FDR
 
 ## Results:
 ## p=100; n=100; true network size = 105; 
-## theta0: 0.06893404 0.00967012
-## L: 0.03392529 0.01916969
-## Sizes: 101 103
-## Power: 0.9047619 0.9238095
-## FDR: 0.05940594 0.05825243
+## theta0: 0.00967012
+## L: 0.01916969
+## Sizes: 103
+## Power: 0.9238095
+## FDR: 0.05825243
 ```
 
 
