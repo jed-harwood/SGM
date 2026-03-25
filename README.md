@@ -8,7 +8,7 @@ An R package for fitting Spectral Graph Models
 - [Overview](#Overview)
 - [Installation](#Installation)
 - [Datasets](#Datasets)
-- [Main Functions](#Main Functions)
+- [Main Functions](#Main-Functions)
 - [Goodness of Fit](#Goodness of Fit)
 - [Examples](#Examples)
 - [Contact](#Contact)
@@ -63,7 +63,7 @@ For more information on a given dataset, please run `?<dataname>`.
 
 ***
 
-## Main Functions
+## Main-Functions
 
 `GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
 * Step 0: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix), obtain an initial estimate for `theta0` by the reciprocal of the largest eigenvalue of `S`, square-rooted.
@@ -232,7 +232,7 @@ c(FDR.2, FDR.3) # FDR
 
 ***
 
-## Goodness of Fit
+## Goodness-of-Fit
 
 The packages offers a goodness of fit measure as proposed in Harwood, Paul, and Peng (2024).  
 
