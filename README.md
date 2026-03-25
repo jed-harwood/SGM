@@ -104,7 +104,7 @@ For more information on a given dataset, please run `?<dataname>`.
 | resultList |        | A list output from `GAR1_fit`. |
 | n          |        | An integer referring to the number of observations. |
 | step       | 3      | Number of steps used to fit the model (2 or 3). Requires that at least step 2 was used in `GAR1_fit`. |
-| model      | "LN"   | Specifies which model was fitted: "LN" (normalized graph Laplacian), "L" (graph Laplacian), "LN.noselfloop" (normalized graph Laplacian without self-loops), "TARGAR" (time-varying GAR). |
+| model      | "LN"   | Specifies which model was fitted: "LN" (normalized graph Laplacian), "L" (graph Laplacian), "LN.noselfloop" (normalized graph Laplacian without self-loops).|
 
 
 
