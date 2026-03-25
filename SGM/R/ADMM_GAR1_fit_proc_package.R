@@ -255,7 +255,7 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' 
 #' @example man-roxygen/GAR1_fit_example.R
 #' @export
-GAR1_fit = function(S, nobs, lambda.v, net.thre, model, step = 3, rho.v=lambda.v, eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter_1a=10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose=F){
+GAR1_fit = function(S, nobs, lambda.v, net.thre, model="LN", step = 3, rho.v=lambda.v, eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter_1a=10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose=F){
   
   ## Get sample covariance and initial theta0 estimate
   step0a = fit_step_0a(S, nobs)
