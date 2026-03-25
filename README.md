@@ -9,7 +9,7 @@ An R package for fitting Spectral Graph Models
 - [Installation](#Installation)
 - [Datasets](#Datasets)
 - [Main Functions](#Main-Functions)
-- [Goodness of Fit](#Goodness of Fit)
+- [Goodness of Fit](#Goodness-of-Fit)
 - [Examples](#Examples)
 - [Contact](#Contact)
 
