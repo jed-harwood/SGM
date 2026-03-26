@@ -6,6 +6,7 @@ An R package for fitting Spectral Graph Models
 
 ## Contents
 - [Overview](#Overview)
+- [Repository Layout](#Repository-Layout)
 - [Installation](#Installation)
 - [Datasets](#Datasets)
 - [Main Functions](#Main-Functions)
@@ -17,10 +18,30 @@ An R package for fitting Spectral Graph Models
 
 ## Overview
 
-This repository contains two folders.
+This repository contains an R package for fitting Spectral Graph Models and a companion folder of scripts for reproducing the simulation and stock-market analyses from the GAR paper.
 
-* `GAR-Simulation-Scripts`: Contains the R Scripts for replicating the simulation and real-data application in the GAR paper.
-* `SGM`: Contains the R package "SGM," for learning undirected graphs through a Graphical Auto-Regressive (GAR) model through a 3-step fitting procedure.
+Most users will work with the `SGM` package directly:
+
+1. Compute a covariance matrix `S` from data.
+2. Fit a GAR model with `GAR1_fit()`.
+3. Select a final model with `model_selec()`.
+4. Extract `theta0`, `theta1`, `L`, and `v0` from the selected model.
+
+## Repository Layout
+
+This repository has two main folders.
+
+* `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
+* `GAR-Simulations`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
+
+The `GAR-Simulations` folder contains:
+
+* simulation workflows for the GAR paper experiments,
+* stock-data preprocessing and fitting scripts,
+* post-processing utilities for summarizing selected GAR models, and
+* example analysis pipelines that use the `SGM` package API end to end.
+
+The `GAR-Simulations` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
 
 
 ## Installation 
@@ -44,7 +65,7 @@ install_github(repo="jed-harwood/SGM", subdir="SGM")
 This repository currently contains two datasets.  To load a dataset into the working environment, run `data("<dataname>")`.  
 
 
-* `gar1`: A sample simulated from an underlying GAR(1) model, with p=100, n=100.  The underrlying graph was a random graph with edge probability of 0.02.
+* `gar1`: A sample simulated from an underlying GAR(1) model, with p=100, n=100. The underlying graph was a random graph with edge probability 0.02.
 * `stocks`: A collection of (standardized) log-returns from 283 stocks on the S\&P 500.  The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.  The stocks come from five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials.
 
 These datasets can be accessed as the following R objects.
@@ -63,7 +84,7 @@ For more information on a given dataset, please run `?<dataname>`.
 
 ***
 
-## Main-Functions
+## Main Functions
 
 `GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
 * Step 0: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix), obtain an initial estimate for `theta0` by the reciprocal of the largest eigenvalue of `S`, square-rooted.
@@ -75,6 +96,18 @@ For more information on a given dataset, please run `?<dataname>`.
 
 `model_selec`: conduct model selection via the eBIC criterion.
 
+Typical workflow:
+
+```r
+fit <- GAR1_fit(S, nobs, lambda.v, net.thre, model = "LN")
+sel <- model_selec(fit)
+
+sel$theta0
+sel$theta1
+sel$L
+sel$v0
+```
+
 ### Arguments
 
 **Table: Arguments for `GAR1_fit`**
@@ -82,9 +115,9 @@ For more information on a given dataset, please run `?<dataname>`.
 | Parameter | Data type | Default | Description |
 |-----------|-----------|---------|-------------|
 | S | matrix |  | Estimate of the covariance matrix (e.g., the MLE). |
-| nobs | integer |  | Number of samples used to compute `S`. |
+| nobs | integer |  | Sample size used to compute `S`. |
 | lambda.v | numeric vector |  | Tuning parameter controlling sparsity of the estimated graph. |
-| net.thre | numeric vector |  | Thresholding parameter for removing noisy edges; used in Step 2 and beyond of the GAR fitting procedure. |
+| net.thre | numeric vector |  | Thresholding parameter used in Step 1 to remove noisy edges and define the zero-patterns used in later steps. |
 | model | character | "LN" | Type of graph Laplacian: "LN" (normalized Laplacian), "L" (graph Laplacian), or "LN.noselfloop" (normalized Laplacian without self-loops). |
 | step | integer | 3 | Number of steps in the estimation procedure (1, 2, or 3). |
 | rho.v | numeric vector | lambda.v | ADMM penalty parameter (typically set equal to `lambda.v`). |
@@ -123,12 +156,14 @@ For more information on a given dataset, please run `?<dataname>`.
 | theta0.init | numeric scalar | Initial estimate of \( \theta_0 \) from Step 0, used in Steps 1 and 2. |
 | theta0.s3 | numeric matrix | Matrix of Step 3b estimates for \( \theta_0 \) (NULL if `step < 3`). |
 | A.net | list | Estimated graph topologies indexed by `lambda.v` and `net.thre`, created in Step 1 and used in Steps 2 and 3. |
-| step1 | list | Step 1 ADMM fit objects indexed by `lambda.v`. Each element is the returned output of `ADMM_L2`, including quantities such as `L`, `Z`, `W`, `theta0`, `theta1`, and `conv`, and Step 1 also defines the thresholded zero-patterns stored in `A.net`. |
+| step1 | list | Step 1 ADMM fit objects indexed by `lambda.v`. Each element is the returned output of `ADMM_L2`, including `L`, `Z`, `W`, `theta0`, `theta1`, and `conv`. Step 1 also defines the thresholded zero-patterns stored in `A.net`. |
 | step2 | list | Step 2 refit objects indexed by `lambda.v` and `net.thre` (NULL if `step < 2`). Each element is the returned output of `ADMM_L2_Zero`, containing the refitted `L`, `Z`, `W`, `theta0`, `theta1`, and `conv` for the corresponding zero-pattern from Step 1. |
-| step3a | list | Step 3a `v0` estimation results indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). Each element stores the estimated `v0` vector produced from the Step 2 Laplacian path. |
+| step3a | list | Step 3a `v0` estimation results indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). Each element stores the estimated `v0` vector computed from the Step 2 Laplacian estimate. |
 | step3b | list | Step 3b joint estimation objects indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). Each element is the returned output of `ADMM_Lap_Zero`, containing the jointly refitted `L`, `theta0`, `theta1`, `Z`, `W`, `phi`, and `conv`. |
 | v0.s3 | list | Step 3a `v0` estimates indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
 | conv | list | Convergence diagnostics stored as `conv$step1`, `conv$step2`, `conv$step3a`, and `conv$step3b`. |
+
+For most applications, you do not need to inspect `step1`, `step2`, `step3a`, or `step3b` directly. The usual workflow is to fit with `GAR1_fit()`, select with `model_selec()`, and then work with the top-level `theta0`, `theta1`, `L`, and `v0` returned by `model_selec()`.
 
 
 
@@ -234,7 +269,7 @@ c(FDR.3) # FDR
 
 ## Goodness-of-Fit
 
-The packages offers a goodness of fit measure as proposed in Harwood, Paul, and Peng (2024).  
+The package offers a goodness-of-fit measure as proposed in Harwood, Paul, and Peng (2024).  
 
 `GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for $n \geq p$.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
@@ -245,7 +280,7 @@ The packages offers a goodness of fit measure as proposed in Harwood, Paul, and 
 |--------------|----------|-------------|
 | S            |          | Estimate of the covariance matrix (e.g., the MLE). |
 | nobs         |          | Number of observations used to compute `S`. |
-| lambda.v     |          | Positive tuning parameter for the GAR(1) model. This should typically be set to `sqrt(log(p)/n)` where `p` is the dimension, and `n` is the sample size. |
+| lambda.v     |          | Positive tuning parameter for the GAR(1) model. This should typically be set to `sqrt(log(p)/nobs)` where `p` is the dimension and `nobs` is the sample size. |
 | rho.v        | lambda.v | ADMM penalty parameter (positive; typically set equal to `lambda.v`). |
 | eps_thre     | 1e-6     | Small positive threshold used for numerical stability. |
 | eps_abs      | 1e-5     | Absolute tolerance for ADMM convergence. |
@@ -277,7 +312,7 @@ data("gar1")
 
 ### Get data 
 gar1_data = gar1$data
-n = nrow(gar1_data)
+nobs = nrow(gar1_data)
 p = ncol(gar1_data)
 
 ### Set model to fit
@@ -285,19 +320,19 @@ model = "LN"
 
 ### Set tuning parameters: lambda and net.thre sequence
 C.v=c(1,0.5)  
-lambda.v=C.v*sqrt(log(p)/n)
+lambda.v=C.v*sqrt(log(p)/nobs)
 
 C.thre=exp(seq(log(1),log(0.05), length.out=10))
-net.thre=C.thre*sqrt(log(p)/n)
+net.thre=C.thre*sqrt(log(p)/nobs)
 
 ### Set ADMM parameter 
 rho.v=pmax(lambda.v, 0.01)
 
 ### Get sample covariance 
-S = var(gar1_data)*(n-1)/n
+S = var(gar1_data)*(nobs-1)/nobs
 
 ### Goodness-of-fit measure
-GAR1_gf(S, n, lambda.v[1], num.thread = 2)
+GAR1_gf(S, nobs, lambda.v[1], num.thread = 2)
 
 # > 1
 
