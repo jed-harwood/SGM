@@ -16,7 +16,7 @@ p=ncol(X)
 #######################
 ## Fit the GAR Model
 ########
-C.v=c(1.5,1.0,0.5, 0.25,0.1, 0.05, 0.01)  # decreasing seq for lambda vals
+C.v=c(8,4,1)
 lambda.v=C.v*sqrt(log(p)/n) 
 
 C.thre=exp(seq(log(1),log(0.1), length.out=12)) # decreasing seq for epsilon.thre vals
