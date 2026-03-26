@@ -145,9 +145,9 @@ results.GAR = foreach(i = 1:rep, .maxcombine=max(rep,2))%dopar%{
                             eps_rel = 1e-3, max_iter_3a = 10000, verbose=FALSE)
   
   ## Store results important results in a list
-  res.i = list("S" = S.i, "conv.0S" = GAR.i.res$conv.0.v0, "result.0S" = GAR.i.res$result.0S,
-               "net.size" = GAR.i.res$net.0.size, "modelList"= GAR.i.res, "A.0.net" = GAR.i.res$A.0.net,
-               "result.L2.0"=GAR.i.res$result.L2.0)
+  res.i = list("S" = S.i, "conv" = GAR.i.res$conv, "step3b" = GAR.i.res$step3b,
+               "modelList" = GAR.i.res, "A.net" = GAR.i.res$A.net,
+               "step1" = GAR.i.res$step1)
   
   ## Return
   res.i
@@ -183,14 +183,14 @@ for (i in 1:rep){
   GAR.models.i = results.GAR[[i]]$modelList
   
   ## Begin the model selection via eBIC
-  GAR.ebic.i = SGM::model_selec(resultList = GAR.models.i, n = n, step = 3)
-  GAR.ebic[[i]] = GAR.ebic.i$model.selec
+  GAR.ebic.i = SGM::model_selec(resultList = GAR.models.i)
+  GAR.ebic[[i]] = GAR.ebic.i$selected.model
   
   ## Extract the estimated parameters
   A.ebic.i = GAR.ebic.i$A.net.e # The 0-1 adjacency matrix for the eBIC selected model
-  L.ebic.i = GAR.ebic.i$model.selec$L * GAR.ebic.i$model.selec$theta1 # L * theta_1
-  theta0.ebic.i = GAR.ebic.i$model.selec$theta0 # theta0 for the eBIC selected model
-  v0.ebic.i = GAR.ebic.i$model.selec$v0 # v0 from eBIC selected model 
+  L.ebic.i = GAR.ebic.i$L * GAR.ebic.i$theta1 # L * theta_1
+  theta0.ebic.i = GAR.ebic.i$theta0 # theta0 for the eBIC selected model
+  v0.ebic.i = GAR.ebic.i$v0 # v0 from eBIC selected model 
   v0.ebic.i = v0.ebic.i/sqrt(sum(v0.ebic.i^2)) # Renormalize (just-in-case) 
   
   ## Record Error and Evaluation Metrics
@@ -206,26 +206,26 @@ for (i in 1:rep){
   
   
   ## Record the Step 1 Estimates for Comparison with Oracle Estimator
-  L.gar.s1 = results.GAR[[i]]$result.L2.0[[1]]$L * results.GAR[[i]]$result.L2.0[[1]]$theta1
-  theta0.gar.s1 = results.GAR[[i]]$result.L2.0[[1]]$theta0
+  L.gar.s1 = results.GAR[[i]]$step1[[1]]$L * results.GAR[[i]]$step1[[1]]$theta1
+  theta0.gar.s1 = results.GAR[[i]]$step1[[1]]$theta0
   
   theta0.s1.err[i] = abs(theta0.gar.s1 - theta0.tr)^2 # Step 1 theta0 Error
   L.s1.err[i] = sum((L.gar.s1 - L.tr*theta1.tr)^2)/sum((theta1.tr*L.tr)^2) # Step 1 L error
   
   ## GGM Graph Recovery using GAR
   ### Metrics for GAR-estimated GGM
-  temp.ggm = GGM.GAR(GAR.ebic.i$model.selec$L, 
+  temp.ggm = GGM.GAR(GAR.ebic.i$L, 
                      theta0.ebic.i, 
-                     GAR.ebic.i$model.selec$theta1)
+                     GAR.ebic.i$theta1)
   
   Sigma.gar.err[i] = sum( (temp.ggm$Sigma - Sigma.tr)^2 )/sum(Sigma.tr^2) # Cov
   Omega.gar.err[i] = sum( (temp.ggm$Omega - Omega.tr)^2 )/sum(Omega.tr^2) # Precision
   
   ## Use -W for the Laplacian estimate (thresholded entries of 0)
-  temp.L = (-1)*GAR.ebic.i$model.selec$W
+  temp.L = (-1) * GAR.ebic.i$selected.model$W
   
   ## Calculate Omega and Sigma using GAR Model
-  temp.ggm = GGM.GAR(temp.L, theta0.ebic.i, GAR.ebic.i$model.selec$theta1) 
+  temp.ggm = GGM.GAR(temp.L, theta0.ebic.i, GAR.ebic.i$theta1) 
   
   ## Adjacency Matrix for GGM Induced by GAR
   A.ggm = abs(temp.ggm$Omega) > 1e-6
@@ -485,5 +485,4 @@ table3.metric[2,] = c(mean(Sigma.sele.glasso), mean(Omega.sele.glasso), mean(fdr
 
 ## Print Results for Table 3: 
 print(table3.metric)
-
 

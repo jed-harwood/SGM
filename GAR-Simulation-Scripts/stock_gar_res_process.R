@@ -12,18 +12,24 @@ library(igraph)
 
 
 ## Given GAR model fit, obtain information for plot results
-get_info_gar = function(modelList, n){
+get_info_gar = function(modelList, n = modelList$nobs){
+  if (is.null(modelList$step3b) || is.null(modelList$A.net)) {
+    stop("`modelList` must contain Step 3 GAR fits and zero-patterns.")
+  }
+  if (!is.numeric(n) || length(n) != 1 || !is.finite(n) || n <= 0) {
+    stop("`n` must be a positive finite scalar.")
+  }
   
   ## Extract length of tuning parameters 
-  n.thre = length(modelList$result.0S[[1]])
-  n.lambda = length(modelList$result.0S)
+  n.thre = length(modelList$step3b[[1]])
+  n.lambda = length(modelList$step3b)
   
   ## Initialize Storage
   net.size = matrix(NA, n.lambda, n.thre)
   log.likelihood.0S = matrix(NA, n.lambda, n.thre)
   
   ## Get index of selected model
-  GAR.index.selec = model_selec(modelList, n)$index
+  GAR.index.selec = model_selec(modelList)$index
   
   
   
@@ -31,8 +37,8 @@ get_info_gar = function(modelList, n){
   S = modelList$S # sample covariance matrix
   for (i in 1:n.lambda){ # ith lambda
     for (j in 1:n.thre){ # jth net.thre
-      result.ij = modelList$result.0S[[i]][[j]]
-      net.ij = modelList$A.0.net[[i]][[j]]
+      result.ij = modelList$step3b[[i]][[j]]
+      net.ij = modelList$A.net[[i]][[j]]
       
       ## Only evaluate models that produced a valid converged Step 3 fit.
       if (is.null(result.ij) || !isTRUE(result.ij$conv) || length(result.ij$theta0) == 0) {
@@ -52,6 +58,9 @@ get_info_gar = function(modelList, n){
   }
   
   GAR.size.selec = net.size[GAR.index.selec[1], GAR.index.selec[2]]
+  if (!is.finite(GAR.size.selec)) {
+    stop("No converged Step 3 models were available for GAR post-processing.")
+  }
   
   resList = list("size" = net.size, "loglike" = log.likelihood.0S, 
                  "selec" = GAR.index.selec, "size.selec" = GAR.size.selec)
@@ -105,23 +114,33 @@ get_info_glasso = function(modelList, S, p, n){
 
 
 ## Make plot for GAR estimated model
-GAR_plot_stocks = function(modelList, n, sp.num){
+GAR_plot_stocks = function(modelList, sp.num, n = modelList$nobs){
+  if (missing(sp.num) || is.null(sp.num) || any(sp.num <= 0)) {
+    stop("`sp.num` must contain positive sector sizes.")
+  }
   
   ## Conduct model selection
-  GAR.selec = model_selec(modelList, n = n)
+  GAR.selec = model_selec(modelList)
+  if (is.null(GAR.selec$v0) || is.null(GAR.selec$selected.model$W)) {
+    stop("The selected GAR model does not contain the quantities needed for plotting.")
+  }
   
   ## Pull the eBIC selected parameters
-  L.est = (-1) * GAR.selec$model.selec$W # (thresholded version)
-  theta0.est = GAR.selec$model.selec$theta0
-  theta1.est = GAR.selec$model.selec$theta1
-  v0.est = GAR.selec$model.selec$v0
+  L.est = (-1) * GAR.selec$selected.model$W # (thresholded version)
+  theta0.est = GAR.selec$theta0
+  theta1.est = GAR.selec$theta1
+  v0.est = GAR.selec$v0
   adj.est = GAR.selec$A.net.e
   
   
   ## Create stock-wise plots and weights
   A.est=-diag(v0.est)%*%L.est%*%diag(v0.est) # off diagonal proportional to the underlying adjacency matrix
   diag(A.est)=0
-  A.est=A.est/max(A.est)  ## rescale to [0,1] so the elements can be interpreted as weights
+  max.A.est = max(A.est)
+  if (!is.finite(max.A.est) || max.A.est <= 0) {
+    stop("The selected GAR model produced non-positive edge weights, so the stock plot cannot be constructed.")
+  }
+  A.est=A.est/max.A.est  ## rescale to [0,1] so the elements can be interpreted as weights
 
   ## stock-wise plot: only draw "large" edges 
   adj.est.plot= abs(L.est)>=0.1 ##only plot edges with L-entries > a threshold
@@ -170,10 +189,20 @@ GAR_plot_stocks = function(modelList, n, sp.num){
   net.sector <- graph.adjacency(adj.sector, mode = "undirected", diag = FALSE)
   
   V(net.sector)$color <- rainbow(sector.num)
-  V(net.sector)$size<-diag(sec.conn.u)/max(diag(sec.conn.u))*50 ## vertices size proportional to with-sector connectivity
+  max.diag = max(diag(sec.conn.u))
+  if (!is.finite(max.diag) || max.diag <= 0) {
+    stop("The selected GAR model produced degenerate sector connectivity, so the stock plot cannot be constructed.")
+  }
+  V(net.sector)$size<-diag(sec.conn.u)/max.diag*50 ## vertices size proportional to with-sector connectivity
   E(net.sector)$color <- "darkgray"
-  temp=sec.conn.u[lower.tri(sec.conn.u)]/max(sec.conn.u[lower.tri(sec.conn.u)])*5
-  temp=temp[adj.sector[lower.tri(adj.sector)]==1]
+  max.edge = max(sec.conn.u[lower.tri(sec.conn.u)])
+  edge.mask = adj.sector[lower.tri(adj.sector)] == 1
+  if (!is.finite(max.edge) || max.edge <= 0) {
+    temp = rep(1, sum(edge.mask))
+  } else {
+    temp=sec.conn.u[lower.tri(sec.conn.u)]/max.edge*5
+  }
+  temp=temp[edge.mask]
   E(net.sector)$width <-temp ## edge size proportional to between size connectivity
   
   pdf("stock-GAR1LN-sector-wise-weighted-network.pdf")
@@ -197,7 +226,7 @@ stock_results = function(modelList, model = "GAR", p, n, sp.num, S){
   
   if (model == "GAR"){
     resList = get_info_gar(modelList = modelList, n = n)
-    table = GAR_plot_stocks(modelList = modelList, n = n, sp.num = sp.num)
+    table = GAR_plot_stocks(modelList = modelList, sp.num = sp.num, n = n)
     resList$table = table
   } else if (model == "glasso"){
     resList = get_info_glasso(modelList = modelList, S = S, p = p, n=n)
@@ -208,9 +237,6 @@ stock_results = function(modelList, model = "GAR", p, n, sp.num, S){
   
   return(resList)
 }
-
-
-
 
 
 

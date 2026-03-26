@@ -67,11 +67,11 @@ For more information on a given dataset, please run `?<dataname>`.
 
 `GAR1_fit`: fit a `GAR(1)` model for a given set of tuning parameters, using a 3-step estimation procedure based on the penalized MLE.  
 * Step 0: given an initial estimate `S` for the covariance matrix (e.g., the sample covariance matrix), obtain an initial estimate for `theta0` by the reciprocal of the largest eigenvalue of `S`, square-rooted.
-* Step 1: given `S`  and `theta0` from Step 0, use an ADMM algorithm to estimate the (normalized) graph Laplacian `L` of the latent graph.  
-* Step 2: given the zero-pattern in `L` from Step 1, use an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian `L`.
+* Step 1: given `S` and `theta0` from Step 0, use an ADMM algorithm to estimate the (normalized) graph Laplacian `L` of the latent graph and extract the thresholded zero-pattern used in later steps.
+* Step 2: given the zero-pattern from Step 1, use an ADMM algorithm to refit the non-zero elements of the (normalized) graph Laplacian `L`.
 * Step 3:
     * a. given the (normalized) graph Laplacian `L` from Step 2, use an ADMM algorithm to estimate the normalized degree vector `v0`.
-    * b. given `v0` and the zero-pattern of `L` from Step 1, use an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian `L`.
+    * b. given `v0` and the zero-pattern from Step 1, use an ADMM algorithm to simultaneously re-estimate `theta0` and the (normalized) graph Laplacian `L`.
 
 `model_selec`: conduct model selection via the eBIC criterion.
 
@@ -79,32 +79,29 @@ For more information on a given dataset, please run `?<dataname>`.
 
 **Table: Arguments for `GAR1_fit`**
 
-| Parameter    | Default   | Description |
-|--------------|----------|-------------|
-| S            |          | Estimate of the covariance matrix (e.g., the MLE). |
-| nobs         |          | Number of samples used to compute `S`. |
-| lambda.v     |          | Tuning parameter controlling sparsity of the estimated graph. |
-| net.thre     |          | Thresholding parameter for removing noisy edges; used in Step 2 and beyond of the GAR fitting procedure. |
-| model        | "LN"     | Type of graph Laplacian: "LN" (normalized Laplacian), "L" (graph Laplacian), or "LN.noselfloop" (normalized Laplacian without self-loops). |
-| step         | 3        | Number of steps in the estimation procedure (1, 2, or 3). |
-| rho.v        | lambda.v | ADMM penalty parameter (typically set equal to `lambda.v`). |
-| eps_thre     | 1e-6     | Small positive threshold used for numerical stability. |
-| eps_abs      | 1e-5     | Absolute tolerance for ADMM convergence. |
-| eps_rel      | 1e-3     | Relative tolerance for ADMM convergence. |
-| max_iter_1   | 10000    | Maximum number of iterations for Step 1. |
-| max_iter_2   | 10000    | Maximum number of iterations for Step 2. |
-| max_iter_3a  | 10000    | Maximum number of iterations for Step 3a. |
-| verbose      | FALSE    | Logical flag indicating whether to print progress during fitting. |
+| Parameter | Data type | Default | Description |
+|-----------|-----------|---------|-------------|
+| S | matrix |  | Estimate of the covariance matrix (e.g., the MLE). |
+| nobs | integer |  | Number of samples used to compute `S`. |
+| lambda.v | numeric vector |  | Tuning parameter controlling sparsity of the estimated graph. |
+| net.thre | numeric vector |  | Thresholding parameter for removing noisy edges; used in Step 2 and beyond of the GAR fitting procedure. |
+| model | character | "LN" | Type of graph Laplacian: "LN" (normalized Laplacian), "L" (graph Laplacian), or "LN.noselfloop" (normalized Laplacian without self-loops). |
+| step | integer | 3 | Number of steps in the estimation procedure (1, 2, or 3). |
+| rho.v | numeric vector | lambda.v | ADMM penalty parameter (typically set equal to `lambda.v`). |
+| eps_thre | numeric scalar | 1e-6 | Small positive threshold used for numerical stability. |
+| eps_abs | numeric scalar | 1e-5 | Absolute tolerance for ADMM convergence. |
+| eps_rel | numeric scalar | 1e-3 | Relative tolerance for ADMM convergence. |
+| max_iter_1a | integer | 10000 | Maximum number of iterations for Step 1. |
+| max_iter_2a | integer | 10000 | Maximum number of iterations for Step 2. |
+| max_iter_3a | integer | 10000 | Maximum number of iterations for Step 3. |
+| verbose | logical | FALSE | Logical flag indicating whether to print progress during fitting. |
 
 
 **Table: Arguments for `model_selec`**
 
-| Parameter   | Default | Description |
-|------------|--------|-------------|
-| resultList |        | A list output from `GAR1_fit`. |
-| n          |        | An integer referring to the number of observations. |
-| step       | 3      | Number of steps used to fit the model (2 or 3). Requires that at least step 2 was used in `GAR1_fit`. |
-| model      | "LN"   | Specifies which model was fitted: "LN" (normalized graph Laplacian), "L" (graph Laplacian), "LN.noselfloop" (normalized graph Laplacian without self-loops). |
+| Parameter | Data type | Default | Description |
+|-----------|-----------|---------|-------------|
+| resultList | list |  | A list output from `GAR1_fit`. The required metadata, including `nobs`, `step`, and `model`, are read directly from this object. |
 
 
 
@@ -114,29 +111,41 @@ For more information on a given dataset, please run `?<dataname>`.
 
 **Table: Output of `GAR1_fit`**
 
-| Output         | Description |
-|----------------|-------------|
-| S              | Matrix: The \( p \times p \) estimated covariance matrix given as supplied in GAR1_fit |
-| result.L2.0    | List: A list containing the Step 1a results. The results stored in the indices of the list correspond to the index of `lambda.v`.  The result corresponding to a given `lambda.v` contains the output of the ADMM algorithm, as discussed in Harwood, Paul and Peng (2024).  |
-| result.0.post  | List: A list containing the Step 2a results. The results are indexed according to the indices of `lambda.v` and `net.thre`.  The result corresponding to a given `lambda.v` and `net.thre` contains the output of the ADMM algorithm, as discussed in Harwood, Paul and Peng (2024). | 
-| result.0S      | List: A list containing the Step 3 results (NULL if `step < 3`). The results are indexed according to the indices of `lambda.v` and `net.thre`. The result corresponding to a given `lambda.v` and `net.thre` contains the output of the ADMM algorithm, as discussed in Harwood, Paul and Peng (2024). |
-| A.0.net        | Matrix: A matrix encoding the estimated graph topology (NULL if `step < 2`). |
-| net.0.size     | Integer: Integer giving the number of edges in the estimated graph (NULL if `step < 2`). |
-| v0.0.est       | Vector: A \( p \times 1 \) vector containing the estimated degree vector (NULL if `step < 3`). |
-| theta0.0       | Positive scalar: estimate of \( \theta_0 \) from Step 1 (and Step 2). |
-| theta0.0S      | Positive scalar: estimate of \( \theta_0 \) from Step 3 (NULL if `step < 3`). |
-| conv.0.v0      | Matrix: Matrix of convergence diagnostics across (`lambda.v`, `net.thre`) combinations (NULL if `step < 3`). |
+| Output | Data type | Description |
+|--------|-----------|-------------|
+| S | matrix | The \( p \times p \) covariance matrix supplied to `GAR1_fit`. |
+| nobs | integer | Number of observations used to compute `S`. |
+| model | character | The fitted GAR model family. |
+| step | integer | The last step requested in the fitting procedure. |
+| lambda.v | numeric vector | Sparsity tuning parameter sequence. |
+| rho.v | numeric vector | ADMM tuning parameter sequence. |
+| net.thre | numeric vector | Threshold sequence used in Steps 2 and 3. |
+| theta0.init | numeric scalar | Initial estimate of \( \theta_0 \) from Step 0, used in Steps 1 and 2. |
+| theta0.s3 | numeric matrix | Matrix of Step 3b estimates for \( \theta_0 \) (NULL if `step < 3`). |
+| A.net | list | Estimated graph topologies indexed by `lambda.v` and `net.thre`, created in Step 1 and used in Steps 2 and 3. |
+| step1 | list | Step 1 fits indexed by `lambda.v`. |
+| step2 | list | Step 2 fits indexed by `lambda.v` and `net.thre` (NULL if `step < 2`). |
+| step3a | list | Step 3a `v0` estimates indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
+| step3b | list | Step 3b joint fits indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
+| v0.s3 | list | Step 3a `v0` estimates indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
+| conv | list | Convergence diagnostics stored as `conv$step1`, `conv$step2`, `conv$step3a`, and `conv$step3b`. |
 
 
 
 **Table: Output of `model_selec`**
 
-| Output       | Description |
-|--------------|-------------|
-| model.selec  | A list containing the model selected by the eBIC criterion. The list contains the estimated (normalized) graph Laplacian `L`, `v0`, `theta0`, and `theta1`, and their associated ADMM parameters (Z, W, phi, etc.) as discussed in Harwood, Paul and Peng (2024). |
-| A.net.e      | A matrix encoding the (unweighted) graph topology selected by the eBIC criterion. |
-| index        | Index corresponding to the optimal tuning parameters (`lambda`, `net.thre`) for the eBIC-selected model. |
-| ebic         | eBIC score of the selected model. |
+| Output | Data type | Description |
+|--------|-----------|-------------|
+| selected.model | list | The ADMM output for the eBIC-selected model. |
+| theta0 | numeric scalar | Selected estimate of \( \theta_0 \). |
+| theta1 | numeric scalar | Selected estimate of \( \theta_1 \). |
+| L | matrix | Selected graph Laplacian estimate. |
+| v0 | numeric vector | Selected `v0` estimate (NULL when `step = 2`). |
+| A.net.e | matrix | The (unweighted) graph topology selected by the eBIC criterion. |
+| index | matrix | Index corresponding to the optimal tuning parameters (`lambda`, `net.thre`). |
+| lambda.v | numeric scalar | Selected value of `lambda.v`. |
+| net.thre | numeric scalar | Selected value of `net.thre`. |
+| ebic | numeric scalar | eBIC score of the selected model. |
 
 
 
@@ -159,7 +168,7 @@ str(gar1)
 
 ### Get data 
 gar1_data = gar1$data
-n = nrow(gar1_data)
+nobs = nrow(gar1_data)
 p = ncol(gar1_data)
 
 ### Set model to fit
@@ -167,23 +176,22 @@ model = "LN"
 
 ### Set tuning parameters: lambda and net.thre sequence
 C.v=c(1,0.5)  
-lambda.v=C.v*sqrt(log(p)/n)
+lambda.v=C.v*sqrt(log(p)/nobs)
 
 C.thre=exp(seq(log(1),log(0.05), length.out=10))
-net.thre=C.thre*sqrt(log(p)/n)
+net.thre=C.thre*sqrt(log(p)/nobs)
 
 ### Set ADMM parameter 
 rho.v=pmax(lambda.v, 0.01)
 
 ### Get sample covariance 
-S = var(gar1_data)*(n-1)/n
+S = var(gar1_data)*(nobs-1)/nobs
 
 ### Fit GAR(1) (up to step 3)
-fit = GAR1_fit(S, n, lambda.v, net.thre, model, 3, rho.v)
+fit = GAR1_fit(S, nobs, lambda.v, net.thre, model, 3, rho.v)
 
 ### Model selection via eBIC for the GAR estimator
-fit.gar1.3 = model_selec(fit, n, step = 3, model)
-gar1_fitted.3 = fit.gar1.3$model.selec
+fit.gar1.3 = model_selec(fit)
 
 ### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 ## Get ground truth
@@ -194,8 +202,8 @@ theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
 
 ## Calculate estimation errors
-theta0.err.3 = abs(gar1_fitted.3$theta0 - theta0.tr)^2
-L.err.3 = sum((gar1_fitted.3$theta1 * gar1_fitted.3$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
+theta0.err.3 = abs(fit.gar1.3$theta0 - theta0.tr)^2
+L.err.3 = sum((fit.gar1.3$theta1 * fit.gar1.3$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
 
 ## Calculate FDR and Power 
 FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)

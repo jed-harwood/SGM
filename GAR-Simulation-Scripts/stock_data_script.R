@@ -86,7 +86,7 @@ GAR_res = stock_results(modelList = gar.stock, model = "GAR", p = p, n = n, sp.n
 
 
 ### (GLASSO)
-GLASSO_res = stock_results(result.glasso.refit, model = "GAR", p = p, n = n, sp.num = sp.num, S = S)
+GLASSO_res = stock_results(result.glasso.refit, model = "glasso", p = p, n = n, sp.num = sp.num, S = S)
 
 
 
@@ -133,6 +133,5 @@ abline(v=glasso.size.selec+p, col=1, lty=2)
 legend("bottomright",  c("GAR","Glasso"), pch = c(2,1), col = c(2,1), cex = 0.5) 
 
 dev.off()
-
 
 

@@ -2,7 +2,7 @@
 ## 2024/09/12
 
 ####################
-## Required Packages 
+## Required Packages
 ####################
 
 #require(SGM) # R Package that has our C++ functions
@@ -10,7 +10,66 @@
 #require(foreach) # For running in Parallel
 #require(doParallel) # For running in Parallel
 
+count_edges <- function(A) {
+  if (is.null(A)) {
+    return(NA_real_)
+  }
+  sum(A) / 2
+}
 
+normalize_gar_model <- function(model) {
+  if (!is.character(model) || length(model) != 1 || is.na(model)) {
+    stop("`model` must be a single character string.")
+  }
+  if (identical(model, "LN.noselfloop")) {
+    return("LN.noloop")
+  }
+  if (model %in% c("LN", "L", "LN.noloop")) {
+    return(model)
+  }
+  stop("`model` must be one of \"LN\", \"L\", or \"LN.noselfloop\".")
+}
+
+validate_gar1_fit_inputs <- function(S, nobs, lambda.v, net.thre, model, step, rho.v, eps_thre, eps_abs, eps_rel, max_iter_1a, max_iter_2a, max_iter_3a) {
+  if (!is.matrix(S) || !is.numeric(S) || nrow(S) != ncol(S) || any(!is.finite(S))) {
+    stop("`S` must be a finite numeric square matrix.")
+  }
+  if (!isTRUE(all.equal(S, t(S), check.attributes = FALSE, tolerance = 1e-8))) {
+    stop("`S` must be symmetric.")
+  }
+  if (!is.numeric(nobs) || length(nobs) != 1 || !is.finite(nobs) || nobs <= 0 || nobs != as.integer(nobs)) {
+    stop("`nobs` must be a positive integer scalar.")
+  }
+  if (!is.numeric(lambda.v) || length(lambda.v) == 0 || any(!is.finite(lambda.v)) || any(lambda.v <= 0)) {
+    stop("`lambda.v` must be a non-empty numeric vector of positive values.")
+  }
+  if (!is.numeric(rho.v) || length(rho.v) != length(lambda.v) || any(!is.finite(rho.v)) || any(rho.v <= 0)) {
+    stop("`rho.v` must be a positive numeric vector with the same length as `lambda.v`.")
+  }
+  if (!is.numeric(net.thre) || length(net.thre) == 0 || any(!is.finite(net.thre)) || any(net.thre < 0)) {
+    stop("`net.thre` must be a non-empty numeric vector of non-negative values.")
+  }
+  if (!is.numeric(step) || length(step) != 1 || !step %in% 1:3) {
+    stop("`step` must be one of 1, 2, or 3.")
+  }
+  if (any(!is.finite(c(eps_thre, eps_abs, eps_rel))) || eps_thre <= 0 || eps_abs <= 0 || eps_rel <= 0) {
+    stop("`eps_thre`, `eps_abs`, and `eps_rel` must be positive finite scalars.")
+  }
+  iter.values = c(max_iter_1a, max_iter_2a, max_iter_3a)
+  if (any(!is.finite(iter.values)) || any(iter.values <= 0) || any(iter.values != as.integer(iter.values))) {
+    stop("`max_iter_1a`, `max_iter_2a`, and `max_iter_3a` must be positive integer scalars.")
+  }
+  invisible(model)
+}
+
+best_finite_index <- function(x, label) {
+  finite.idx = which(is.finite(x), arr.ind = TRUE)
+  if (length(finite.idx) == 0) {
+    stop(sprintf("No finite eBIC values were available for %s. Check convergence diagnostics before calling `model_selec()`.", label))
+  }
+  values = x[finite.idx]
+  finite.idx[which.min(values), , drop = FALSE]
+}
 
 
 ##############
@@ -22,205 +81,179 @@
 ##########
 
 fit_step_0a = function(S, nobs){
-  
   n = nobs
-  
-  sigma = eigen(S, symmetric = T, only.values = T)
-  theta0.e = sqrt(1/max(sigma$values)) ## initial estimated theta0; for this to be consistent we need p=o(n)
-  
-  temp = list("S" = S, "theta0" = theta0.e, "n"=nobs)
+
+  sigma = eigen(S, symmetric = TRUE, only.values = TRUE)
+  theta0.e = sqrt(1 / max(sigma$values))
+
+  temp = list("S" = S, "theta0" = theta0.e, "n" = n)
   return(temp)
 }
 
 ###############
-### Step 1a: fit L given theta_0.e from step 0a and set v0=0: Separate algorithm
+### Step 1: fit L given theta_0.e from Step 0 and obtain thresholded zero-patterns
 #############
 
-fit_step_1a = function(step0a, lambda.v, rho.v, model, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose){
-  
+fit_step_1 = function(step0a, lambda.v, rho.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose){
   S = step0a$S
   theta0.e = step0a$theta0
-  
+
   p = ncol(S)
-  Z = matrix(0,p,p)
+  Z = matrix(0, p, p)
   W = Z
-  phi=0
-  
-  result.L2.0 = vector("list", length(lambda.v))
-  
-  for (j in 1:length(lambda.v)){
-    result.L2.0[[j]] = ADMM_L2(S, theta0.e, rep(0,ncol(S)), rho.v[j], lambda.v[j], model, Z, W, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
+
+  step1.fit = vector("list", length(lambda.v))
+  A.net = vector("list", length(lambda.v))
+
+  for (j in seq_along(lambda.v)){
+    step1.fit[[j]] = ADMM_L2(S, theta0.e, rep(0, p), rho.v[j], lambda.v[j], model, Z, W, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
+
+    if (!is.null(step1.fit[[j]]) && isTRUE(step1.fit[[j]]$conv)) {
+      A.net[[j]] = vector("list", length(net.thre))
+
+      for (k in seq_along(net.thre)){
+        net.e = abs(step1.fit[[j]]$L) > net.thre[k]
+        diag(net.e) = 0
+        A.net[[j]][[k]] = net.e
+      }
+    }
   }
-  
-  return(result.L2.0)
-  
+
+  conv.step1 = vapply(step1.fit, function(result.c) {
+    !is.null(result.c) && isTRUE(result.c$conv)
+  }, logical(1))
+
+  if (!any(conv.step1)) {
+    warning("Step 1 did not converge for any value of `lambda.v`.")
+  }
+
+  return(list("fit" = step1.fit, "A.net" = A.net, "conv" = conv.step1))
 }
 
 #################
-### Step 2a: refit L: given the pattern from Step 1a Sep results; set v0=0: Sep-Zero  algorithm
+### Step 2: refit L given the pattern from Step 1
 ############
 
-## Extract 0 pattern
-fit_step_2a_1 = function(step1a, lambda.v, net.thre){
-  
-  ## Storage objects 
-  conv.0.stat=rep(NA, length(lambda.v))
-  A.0.net= vector("list",  length(lambda.v))     ## store the estimated network for post-selection estimation
-  net.0.size=matrix(NA, length(lambda.v), length(net.thre))  # # of edges/2 in the estimated network == number of free non-zero parameters in the Laplacian
-  
-  
-  ## Extract zero pattern
-  for (j in 1:length(lambda.v)){
-    result.c = step1a[[j]]
-    
-    if(!is.null(result.c)&&(conv.0.stat[j]=result.c$conv)==T){
-      A.0.net[[j]]=vector("list", length(net.thre))
-      
-      for (k in 1:length(net.thre)){
-        net.e = abs(result.c$L)>net.thre[k]
-        diag(net.e) = 0
-        net.0.size[j,k] = sum(net.e)/2
-        A.0.net[[j]][[k]] = net.e
-      }
-    }
-  }
-  return(list("A.0.net"=A.0.net, "net.0.size" = net.0.size, "conv.0.stat" = conv.0.stat))
-}
-
-## refit L given zero patterns: still fix v0 at 0
-fit_step_2a_2 = function(step0a, step2a.1, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose){
-  
-  ## Extract results from step0a and step 2a.1
+fit_step_2 = function(step0a, step1, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose){
   S = step0a$S
   theta0.e = step0a$theta0
   p = ncol(S)
   n = step0a$n
-  result.0.post = vector("list", length(lambda.v))
-  Z = matrix(0, p,p)
+
+  step2.fit = vector("list", length(lambda.v))
+  Z = matrix(0, p, p)
   W = Z
-  
-  A.0.net = step2a.1$A.0.net
-  net.0.size = step2a.1$net.0.size
-  conv.0.stat = step2a.1$conv.0.stat
-  
-  for(j in 1:length(lambda.v)){
-    if(conv.0.stat[j]==T){
-      result.0.post[[j]] = vector("list", length(net.thre))
-      for(k in 1:length(net.thre)){
-        result.0.post[[j]][[k]] = ADMM_L2_Zero(S, theta0.e, v=rep(0,p), rho=sqrt(log(p)/n), A=A.0.net[[j]][[k]], model, Z_ini=Z, W_ini = W, 
-                                               eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
+
+  A.net = step1$A.net
+  conv.step1 = step1$conv
+  conv.step2 = matrix(FALSE, length(lambda.v), length(net.thre))
+
+  for (j in seq_along(lambda.v)){
+    if (isTRUE(conv.step1[j])) {
+      step2.fit[[j]] = vector("list", length(net.thre))
+      for (k in seq_along(net.thre)){
+        step2.fit[[j]][[k]] = ADMM_L2_Zero(S, theta0.e, v = rep(0, p), rho = sqrt(log(p) / n), A = A.net[[j]][[k]], model, Z_ini = Z, W_ini = W,
+                                           eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
+        conv.step2[j, k] = !is.null(step2.fit[[j]][[k]]) && isTRUE(step2.fit[[j]][[k]]$conv)
       }
     }
   }
-  
-  return(list("result.0.post" = result.0.post, "A.0.net" = A.0.net, "net.0.size" = net.0.size))
-  
-}
 
-fit_step_2a = function(step0a, step1a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose){
-  
-  ## Extract 0 pattern
-  step_2a_1 = fit_step_2a_1(step1a, lambda.v, net.thre)
-  
-  ## Refit non-zero elements
-  step_2a_2 = fit_step_2a_2(step0a, step_2a_1, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
-  
-  return(step_2a_2)
+  if (any(conv.step1) && !any(conv.step2)) {
+    warning("Step 2 did not converge for any combination of `lambda.v` and `net.thre`.")
+  }
+
+  return(list("fit" = step2.fit, "conv" = conv.step2))
 }
 
 ######################
-## Step 3a.0: obtain v0 estimate from Step 2a L: 2024/6/25: Made as a separate function
+## Step 3 helpers
 #############
 
-## Estimate degree vector
-fit_step_3a_0 = function(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, verbose){
-  
-  ## Initialize Objects
-  matrix(NA, length(lambda.v), length(net.thre)) 
-  v0.0.est=vector("list",  length(lambda.v))
-  conv.0.v0=matrix(FALSE, length(lambda.v), length(net.thre)) # 3/25/2026: Initialize to FALSE
-  
-  ## Extract result from previous steps
-  result.0.post = step2a$result.0.post
+fit_step_3a = function(step0a, step2, lambda.v, net.thre, eps_abs, eps_rel, verbose){
+  v0.s3 = vector("list", length(lambda.v))
+  conv.step3a = matrix(FALSE, length(lambda.v), length(net.thre))
+
+  step2.fit = step2$fit
   p = ncol(step0a$S)
-  
-  for (j in 1:length(lambda.v)){
-    v0.0.est[[j]] = vector("list", length(net.thre))
-    
-    for (k in 1:length(net.thre)){
-      result.c = result.0.post[[j]][[k]]
-      
-      if(!is.null(result.c)&&result.c$conv){
+
+  for (j in seq_along(lambda.v)){
+    v0.s3[[j]] = vector("list", length(net.thre))
+
+    for (k in seq_along(net.thre)){
+      result.c = step2.fit[[j]][[k]]
+
+      if (!is.null(result.c) && isTRUE(result.c$conv)) {
         L.est = result.c$L
-        temp=try(ADMM.Deg.L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps.abs=1e-5, eps.rel=1e-3, max.iter=100000, verbose=FALSE))
-        
+        temp = try(ADMM.Deg.L(L.est, rho = 0.1, epsilon = sqrt(1 / (2 * ncol(L.est))), eps.abs = 1e-5, eps.rel = 1e-3, max.iter = 100000, verbose = FALSE))
+
         if (inherits(temp, "try-error")){
-          temp = list("v" = rep(0,p), "conv" = F)
+          temp = list("v" = rep(0, p), "conv" = FALSE)
         }
-        
-        ## Raise warning if v0 didn't converge
+
         if (!isTRUE(temp$conv)){
-          warning(sprintf("v0 did not converge at (lambda.index=%d, net.thre.index=%d).  Replacing with zero vector.", j, k))
+          warning(sprintf("v0 did not converge at (lambda.index=%d, net.thre.index=%d). Replacing with zero vector.", j, k))
         }
-        
-        
-        ## Update results
-        v0.0.est[[j]][[k]]=temp$v
-        conv.0.v0[j,k]=temp$conv
+
+        v0.s3[[j]][[k]] = temp$v
+        conv.step3a[j, k] = isTRUE(temp$conv)
       }
     }
   }
-  
-  return(list("v0.0.est" = v0.0.est, "conv.0.v0" = conv.0.v0))
-  
+
+  return(list("v0.s3" = v0.s3, "conv" = conv.step3a))
 }
 
-## Estimate theta0 and L esimultaneously with 0-pattern from step1a, and estimated v0 from step 3a.1
-fit_step_3a_1 = function(step0a, step2a, step3a.0, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose){
-  
-  ## Extract results from previous steps
+## Estimate theta0 and L simultaneously with 0-pattern from Step 1 and estimated v0 from Step 3a
+fit_step_3b = function(step0a, step1, step2, step3a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose){
   S = step0a$S
   n = step0a$n
   p = ncol(S)
-  
-  A.0.net = step2a$A.0.net
-  v0.0.est = step3a.0$v0.0.est
-  conv.0.v0 = step3a.0$conv.0.v0
-  
-  ## Initialize matrices
-  result.0S=vector("list",  length(lambda.v))
-  theta0.0S=matrix(NA, length(lambda.v), length(net.thre))
-  Z = matrix(0,p,p)
+
+  A.net = step1$A.net
+  v0.s3 = step3a$v0.s3
+  conv.step3a = step3a$conv
+
+  step3b.fit = vector("list", length(lambda.v))
+  theta0.s3 = matrix(NA, length(lambda.v), length(net.thre))
+  conv.step3b = matrix(FALSE, length(lambda.v), length(net.thre))
+  Z = matrix(0, p, p)
   W = Z
   phi = 0
-  
-  for(j in 1:length(lambda.v)){
-    result.0S[[j]] = vector("list", length(net.thre))
-    
-    for(k in 1:length(net.thre)){
-      if(conv.0.v0[j,k] == T){
-        v0.e = v0.0.est[[j]][[k]]
-        result.0S[[j]][[k]] = ADMM_Lap_Zero(S, v0.e, rho=sqrt(log(p)/n), AA=A.0.net[[j]][[k]], model=model, ZZ_ini = Z, WW_ini = W, phi_ini = phi, 
-                                            eps_thre = eps_thre, eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter_3a, Z_max_iter = 100000, 
-                                            Z_conv_abs = 1e-5, Z_conv_rel = 1e-3, verbose = verbose)
-        theta0.0S[j,k] = result.0S[[j]][[k]]$theta0
+
+  for (j in seq_along(lambda.v)){
+    step3b.fit[[j]] = vector("list", length(net.thre))
+
+    for (k in seq_along(net.thre)){
+      if (isTRUE(conv.step3a[j, k])) {
+        v0.e = v0.s3[[j]][[k]]
+        step3b.fit[[j]][[k]] = ADMM_Lap_Zero(S, v0.e, rho = sqrt(log(p) / n), AA = A.net[[j]][[k]], model = model, ZZ_ini = Z, WW_ini = W, phi_ini = phi,
+                                             eps_thre = eps_thre, eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter_3a, Z_max_iter = 100000,
+                                             Z_conv_abs = 1e-5, Z_conv_rel = 1e-3, verbose = verbose)
+        theta0.s3[j, k] = step3b.fit[[j]][[k]]$theta0
+        conv.step3b[j, k] = !is.null(step3b.fit[[j]][[k]]) && isTRUE(step3b.fit[[j]][[k]]$conv)
       }
     }
   }
-  return(list("result.0S" = result.0S, "theta0.0S" = theta0.0S, "v0.0.est" = v0.0.est, "conv.0.v0" = conv.0.v0))
+
+  if (any(conv.step3a) && !any(conv.step3b)) {
+    warning("Step 3b did not converge for any combination of `lambda.v` and `net.thre`.")
+  }
+
+  return(list("fit" = step3b.fit, "theta0.s3" = theta0.s3, "conv" = conv.step3b))
 }
 
-fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose){
-  
-  
-  ## Estimate degree vector
-  step_3a_0 = fit_step_3a_0(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, verbose)
-  
-  ## Estimate theta0 and L simultaneously given v0 and 0-patten
-  step_3a_1 = fit_step_3a_1(step0a, step2a, step_3a_0, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose)
-  
-  
-  return(step_3a_1)
+fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose){
+  step_3a = fit_step_3a(step0a, step2, lambda.v, net.thre, eps_abs, eps_rel, verbose)
+  step_3b = fit_step_3b(step0a, step1, step2, step_3a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose)
+
+  return(list(
+    "step3a" = step_3a$v0.s3,
+    "step3b" = step_3b$fit,
+    "theta0.s3" = step_3b$theta0.s3,
+    "v0.s3" = step_3a$v0.s3,
+    "conv" = list("step3a" = step_3a$conv, "step3b" = step_3b$conv)
+  ))
 }
 
 
@@ -228,10 +261,10 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 ## Model Fitting function
 ################################
 #' GAR(1) fitting procedure
-#' 
+#'
 #' @description
-#' `GAR1_fit` performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters `theta0` and `theta`, and the normalized graph Laplacian `L`.  
-#' 
+#' `GAR1_fit` performs a three-step estimation procedure, using a penalized MLE approach, to estimate graph filter parameters `theta0` and `theta`, and the normalized graph Laplacian `L`.
+#'
 #' @param S An estimate of the covariance matrix, such as the MLE.
 #' @param nobs The number of samples used to calculate `S`
 #' @param lambda.v Tuning parameter to control sparsity of the estimated graph
@@ -245,58 +278,88 @@ fit_step_3a = function(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_
 #' @param eps_thre Small positive number
 #' @param eps_abs ADMM convergence criterion
 #' @param eps_rel ADMM convergence criterion
-#' @param max_iter_1, max_iter_2, max_iter_3a Maximum number of iterations for algorithm
-#' 
+#' @param max_iter_1a, max_iter_2a, max_iter_3a Maximum number of iterations for algorithm
+#'
 #' @returns
 #' A list object
-#' * `S` The p by p estimated covariance matrix
-#' * `result.L2.0` A list containing the Step 1a results
-#' * `result.0.post` A list containing the Step 2a results
-#' * `result.0S` A list containing the Step 3 results (NULL if `step<3`)
-#' * `A.0.net` A matrix that encodes the estimated graph topology (NULL if `step<2`)
-#' * `net.0.size` An integer containing the number of edges in the estimated graph (NULL if `step<2`)
-#' * `v0.0.est` A p by 1 matrix containing the estimated degree vector (NULL if `step<3`)
-#' * `theta0.0` A positive number. The estimated theta0 from Step 1 (and 2)
-#' * `theta0.0S` A positive number. The estimated theta0 from Step 3 (NULL if `step<3`)
-#' * `conv.0.v0` A matrix containing convergence results for each combination of `lambda.v` (rows) and `net.thre` (columns) (NULL if `step<3`)
-#' 
+#' * `S` The supplied covariance estimate.
+#' * `nobs` The number of observations used to form `S`.
+#' * `model` The fitted GAR model family.
+#' * `step` The last step requested in the fitting procedure.
+#' * `lambda.v` The sparsity tuning parameter sequence.
+#' * `rho.v` The ADMM tuning parameter sequence.
+#' * `net.thre` The graph-threshold sequence used in Steps 2 and 3.
+#' * `theta0.init` The initial estimate of `theta0` from Step 0, used in Steps 1 and 2.
+#' * `theta0.s3` A matrix of Step 3b estimates for `theta0` (NULL if `step<3`).
+#' * `A.net` A list of adjacency matrices defining the zero-patterns created in Step 1 and used in Steps 2 and 3.
+#' * `step1` A list containing the Step 1 fits, indexed by `lambda.v`.
+#' * `step2` A list containing the Step 2 fits, indexed by `lambda.v` and `net.thre` (NULL if `step<2`).
+#' * `step3a` A list containing the Step 3a `v0` estimates, indexed by `lambda.v` and `net.thre` (NULL if `step<3`).
+#' * `step3b` A list containing the Step 3b joint fits, indexed by `lambda.v` and `net.thre` (NULL if `step<3`).
+#' * `v0.s3` A list containing the Step 3a `v0` estimates (NULL if `step<3`).
+#' * `conv` A list of convergence diagnostics with components `step1`, `step2`, `step3a`, and `step3b`.
+#'
 #' @example man-roxygen/GAR1_fit_example.R
 #' @export
-GAR1_fit = function(S, nobs, lambda.v, net.thre, model="LN", step = 3, rho.v=lambda.v, eps_thre=1e-6, eps_abs=1e-5, eps_rel=1e-3, max_iter_1a=10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose=F){
-  
-  ## Get sample covariance and initial theta0 estimate
+GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v = lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter_1a = 10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose = FALSE){
+  model.input = model
+  model.internal = normalize_gar_model(model)
+  validate_gar1_fit_inputs(S, nobs, lambda.v, net.thre, model.internal, step, rho.v, eps_thre, eps_abs, eps_rel, max_iter_1a, max_iter_2a, max_iter_3a)
+
   step0a = fit_step_0a(S, nobs)
-  print("Step 0a complete")
-  
-  ## Get 0-pattern form initial theta0 estimate and sample covariance
-  step1a = fit_step_1a(step0a, lambda.v, rho.v, model, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
-  print("Step 1a complete")
-  
+  if (verbose) {
+    print("Step 0a complete")
+  }
+
+  step1 = fit_step_1(step0a, lambda.v, rho.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
+  if (verbose) {
+    print("Step 1 complete")
+  }
+
   if (step >= 2){
-    ## Using 0-pattern, re-estimate non-zero elements in L
-    step2a = fit_step_2a(step0a, step1a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
-    print("Step 2a complete")
+    step2 = fit_step_2(step0a, step1, lambda.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
+    if (verbose) {
+      print("Step 2 complete")
+    }
+  } else {
+    step2 = NULL
   }
-  else{
-    step2a = NULL
-  }
-  
+
   if (step == 3){
-    ## Use estimated L to estimate degree vector, then simultaneously re-estimate L and theta0
-    step3a = fit_step_3a(step0a, step2a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose)
-    print("Step 3a complete")
+    step3 = fit_step_3(step0a, step1, step2, lambda.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose)
+    if (verbose) {
+      print("Step 3 complete")
+    }
+  } else {
+    step3 = NULL
   }
-  else{
-    step3a = NULL
-  }
-  
-  resultList = list("S" = step0a$S, "result.L2.0" = step1a, "result.0.post" = step2a$result.0.post, "result.0S" = step3a$result.0S, 
-                    "A.0.net" = step2a$A.0.net, "net.0.size" = step2a$net.0.size, "v0.0.est" = step3a$v0.0.est,
-                    "theta0.e" = step0a$theta0, "theta0.0S" = step3a$theta0.0S, "conv.0.v0" = step3a$conv.0.v0)
-  
+
+  resultList = list(
+    "S" = step0a$S,
+    "nobs" = nobs,
+    "model" = model.input,
+    "step" = step,
+    "lambda.v" = lambda.v,
+    "rho.v" = rho.v,
+    "net.thre" = net.thre,
+    "theta0.init" = step0a$theta0,
+    "theta0.s3" = if (is.null(step3)) NULL else step3$theta0.s3,
+    "A.net" = step1$A.net,
+    "step1" = step1$fit,
+    "step2" = if (is.null(step2)) NULL else step2$fit,
+    "step3a" = if (is.null(step3)) NULL else step3$step3a,
+    "step3b" = if (is.null(step3)) NULL else step3$step3b,
+    "v0.s3" = if (is.null(step3)) NULL else step3$v0.s3,
+    "conv" = list(
+      "step1" = step1$conv,
+      "step2" = if (is.null(step2)) NULL else step2$conv,
+      "step3a" = if (is.null(step3)) NULL else step3$conv$step3a,
+      "step3b" = if (is.null(step3)) NULL else step3$conv$step3b
+    )
+  )
+
   return(resultList)
 }
-
 
 
 ##############
@@ -308,220 +371,211 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model="LN", step = 3, rho.v=lam
 ## eBIC and log-likelihood selection
 ######
 #' Select tuning parameters for GAR(1) model
-#' 
+#'
 #' @description
-#' Given a list of models, uses eBIC criterion to select the appropriate tuning parameters for GAR(1) and conducts a goodness of fit test.
-#' 
-#' @param resultList A list output from `GAR1_fit`
-#' @param n An integer referring to the number of observations
-#' @param step 2 or 3; How many steps were used to fit the model.  Requires that at least step 2 was used for `GAR1_fit`.
-#' @param model Which model was fitted
-#' * `"LN"` Normalized graph Laplacian
-#' * `"L"` Graph Laplacian
-#' * `"LN.noselfloop"` Normalized graph Laplacian without self-loops. 
-#' * `"TARGAR` Time-Varying GAR
-#' 
+#' Given a fitted GAR(1) model path from `GAR1_fit`, uses the eBIC criterion to select the appropriate tuning parameters.
+#'
+#' @param resultList A list output from `GAR1_fit`.
+#'
 #' @returns A list object
-#' * `model.selec`: A list containing the model with the model chosen by the eBIC criterion.
+#' * `selected.model`: A list containing the ADMM output for the selected model.
+#' * `theta0`: The selected `theta0` estimate.
+#' * `theta1`: The selected `theta1` estimate.
+#' * `L`: The selected graph Laplacian estimate.
+#' * `v0`: The selected `v0` estimate (NULL when `step=2`).
 #' * `A.net.e`: A matrix encoding the (unweighted) graph chosen by the eBIC criterion.
 #' * `index`: Index for the optimal tuning parameters (lambda, net.thre) for the eBIC-selected model.
+#' * `lambda.v`: The selected `lambda.v` value.
+#' * `net.thre`: The selected `net.thre` value.
 #' * `ebic`: ebic score for the selected model.
-#' 
+#'
 #' @export
-model_selec = function(resultList, n, step = 3, model = "LN"){
-  
-  if (model %in% c("LN", "L", "LN.noselfloop")){
-  ## extract p, n, and results
-  S = resultList$S
-  p = nrow(S)
-  
-  theta0.ini = resultList$theta0.e # Step 0: Initial Theta estimate   
-  
-  result.0 = resultList$result.L2.0 # Step 1a: Zero-patterns
-  A.0.net = resultList$A.0.net # Step 1a: Estimated Networks (Step 1a)
-  net.0.size = resultList$net.0.size # Step 1a: Estimated network size
-  
-  result.post = resultList$result.0.post # Step 2a
-  
-  result.0S = resultList$result.0S # Step 3a: L, phi, etc.
-  theta0.0S = resultList$theta0.0S # Step 3a: theta0 est. 
-  v0.0.est = resultList$v0.0.est # Step 3a: Est. v0 
-  
-  ## Number of lambda and net.thre (tuning parameters)
-  n.lambda = dim(resultList$theta0.0S)[1]
-  n.net.thr = dim(resultList$theta0.0S)[2]
-  
-  ## set gamma for ebic
-  if(p/n>0.5){## e.g., for p=100,n=100
-    gamma=1  ## eBIC parameter: p/n~1 set as 1; when p/n<0.5: set as 0.5 
-  }else{
-    gamma=0.5
+model_selec = function(resultList){
+  if (!is.list(resultList)) {
+    stop("`resultList` must be a fitted model object.")
   }
-  
-  ## Number of edges possible 
-  P.total=p*(p-1)/2
-  
-  ## Convergence status 
-  conv.post=array(NA, dim= dim(resultList$theta0.0S)) ## Step 2a + Step3a.0 convergence 
-  conv.0S=conv.post ## Step 3a.1 convergence 
-  
-  ## log-likelihood and ebic
-  log.post.like=conv.post  ## Step 2a
-  log.0S.like=conv.post ## Stap 3a.1
-  
-  bic.post=conv.post ## Step 2a
-  bic.0S=conv.post ## Step 3a.1
-  
-  ebic.post=conv.post ## Step 2a
-  ebic.0S=conv.post ## Stap 3a.1
-  
-  ## Calculate BIC, eBIC, and log-likelihood
-  for (j in 1:n.lambda){
-    for (k in 1:n.net.thr){
-      
-      ## Extract network information
-      net.size.c = net.0.size[j,k] # Extract network size
-      A.0.net.c = A.0.net[[j]][[k]] # Extract Adjacency matrix
-      
-      ## Calculate eBIC term
-      ebic.term=2*gamma*(lfactorial(P.total)-lfactorial(net.size.c)-lfactorial(P.total-net.size.c))
-      
-      ## If stopping at step 2a, calculate BIC, eBIC, and log-likelihood
-      if(step == 2){
-        result.c = result.post[[j]][[k]]
-        if(!is.null(result.c) && (conv.post[j,k]=result.c$conv)==TRUE){
-          ## Extract the estimates for L and theta1 
-          L.est=result.c$L
-          theta1.e=result.c$theta1
-          
-          ## Calculate log-likelihood
-          log.post.like[j,k]=LogLike(S, theta0.ini, theta1.e, L.est, n)
-          
-          ## Calculate BIC and eBIC
-          if(model == "LN"||model=="LN.noloop"){## LN models have additional p parameters accounting for the estimated v0
-            bic.post[j,k]=BIC(log.post.like[j,k], n, net.size.c+1+p)
-          }else{
-            bic.post[j,k]=BIC(log.post.like[j,k], n, net.size.c+1)
-          }
-          ebic.post[j,k]=bic.post[j,k]+ebic.term
-          
+
+  n = if (!is.null(resultList$nobs)) resultList$nobs else resultList$n
+  step = if (!is.null(resultList$step)) resultList$step else 3
+  model = if (!is.null(resultList$model)) resultList$model else "TARGAR"
+
+  if (model %in% c("LN", "L", "LN.noselfloop", "LN.noloop")){
+    if (is.null(resultList$S) || is.null(resultList$nobs)) {
+      stop("`resultList` must be an object returned by `GAR1_fit()`.")
+    }
+    if (step < 2) {
+      stop("`model_selec()` requires a `GAR1_fit()` object fitted with `step >= 2`.")
+    }
+    if (!is.numeric(resultList$nobs) || length(resultList$nobs) != 1 || !is.finite(resultList$nobs) || resultList$nobs <= 0) {
+      stop("`resultList$nobs` must be a positive finite scalar.")
+    }
+    if (is.null(resultList$lambda.v) || is.null(resultList$net.thre) || is.null(resultList$A.net)) {
+      stop("`resultList` is missing required tuning metadata or zero-patterns.")
+    }
+
+    S = resultList$S
+    p = nrow(S)
+
+    theta0.ini = resultList$theta0.init
+    A.net = resultList$A.net
+    step2.fit = resultList$step2
+    step3b.fit = resultList$step3b
+    theta0.s3 = resultList$theta0.s3
+    v0.s3 = resultList$v0.s3
+
+    n.lambda = length(resultList$lambda.v)
+    n.net.thr = length(resultList$net.thre)
+    if (n.lambda == 0 || n.net.thr == 0) {
+      stop("`resultList` does not contain any tuning-parameter combinations to select from.")
+    }
+
+    if (p / n > 0.5){
+      gamma = 1
+    } else {
+      gamma = 0.5
+    }
+
+    P.total = p * (p - 1) / 2
+
+    conv.post = matrix(NA, nrow = n.lambda, ncol = n.net.thr)
+    conv.0S = conv.post
+
+    log.post.like = conv.post
+    log.0S.like = conv.post
+
+    bic.post = conv.post
+    bic.0S = conv.post
+
+    ebic.post = conv.post
+    ebic.0S = conv.post
+
+    for (j in seq_len(n.lambda)){
+      for (k in seq_len(n.net.thr)){
+        if (is.null(A.net[[j]]) || is.null(A.net[[j]][[k]])) {
+          next
         }
-        
-      }
-      
-      ## If stopping at step 3a, calculate BIC, eBIC, and log-likelihood
-      if(step==3){
-        result.c = result.0S[[j]][[k]]
-        if(!is.null(result.c)&&(conv.0S[j,k]=result.c$conv)==TRUE){
-          
-          ## Extract estimates for theta0, v0, L, and theta1
-          theta0.e = theta0.0S[j,k]
-          v0.e = v0.0.est[[j]][[k]]
-          v0.e = v0.e/sqrt(sum(v0.e^2)) ## make norm=1
-          L.est = result.c$L
-          theta1.e = result.c$theta1
-          
-          ## Calculate log-likelihood
-          log.0S.like[j,k]=LogLike(S, theta0.e, theta1.e, L.est, n)
-          
-          ## Calculate BIC and eBIC
-          if(model == "LN"||model=="LN.noloop"){## LN models have additional p parameters accounting for the estimated v0, but we do not count it
-            bic.0S[j,k]=BIC(log.0S.like[j,k], n, net.size.c+1)
-          }else{
-            bic.0S[j,k]=BIC(log.0S.like[j,k], n, net.size.c+1)
+        A.net.c = A.net[[j]][[k]]
+        net.size.c = count_edges(A.net.c)
+        if (!is.finite(net.size.c)) {
+          next
+        }
+        ebic.term = 2 * gamma * (lfactorial(P.total) - lfactorial(net.size.c) - lfactorial(P.total - net.size.c))
+
+        if (step == 2){
+          result.c = step2.fit[[j]][[k]]
+          if (!is.null(result.c) && (conv.post[j, k] = result.c$conv) == TRUE){
+            L.est = result.c$L
+            theta1.e = result.c$theta1
+            log.post.like[j, k] = LogLike(S, theta0.ini, theta1.e, L.est, n)
+
+            if (model == "LN" || model == "LN.noloop"){
+              bic.post[j, k] = BIC(log.post.like[j, k], n, net.size.c + 1 + p)
+            } else {
+              bic.post[j, k] = BIC(log.post.like[j, k], n, net.size.c + 1)
+            }
+            ebic.post[j, k] = bic.post[j, k] + ebic.term
           }
-          
-          ebic.0S[j,k]=bic.0S[j,k]+ebic.term
+        }
+
+        if (step == 3){
+          result.c = step3b.fit[[j]][[k]]
+          if (!is.null(result.c) && (conv.0S[j, k] = result.c$conv) == TRUE){
+            theta0.e = theta0.s3[j, k]
+            L.est = result.c$L
+            theta1.e = result.c$theta1
+            log.0S.like[j, k] = LogLike(S, theta0.e, theta1.e, L.est, n)
+            bic.0S[j, k] = BIC(log.0S.like[j, k], n, net.size.c + 1)
+            ebic.0S[j, k] = bic.0S[j, k] + ebic.term
+          }
         }
       }
     }
-  }
-  
-  ######################
-  ## Select the optimal lambda, net.thre, according to desired threshold
-  ####################
-  
-  
-  ## Select optimal index, depending on which steps used
-    v0.opt = NA ## <-- new
-  if(step == 2){
-    ## Step 2a: post estimator selection results 
-    index.c=which.min(ebic.post)
-    index.c = arrayInd(index.c, .dim = dim(ebic.post))
-    
-    resultOptimal = result.post[[index.c[1]]][[index.c[2]]]
-    A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
-    ebic.opt = ebic.post[index.c]
-  }
-    
-  if(step == 3){
-    ## Step 3a: 0S estimator selection results 
-    index.c = which.min(ebic.0S)
-    index.c = arrayInd(index.c, .dim = dim(ebic.0S))
-    resultOptimal = result.0S[[index.c[1]]][[index.c[2]]]
-    A.0.net.opt = A.0.net[[index.c[1]]][[index.c[2]]]
-    v0.opt = v0.0.est[[index.c[1]]][[index.c[2]]] ## <-- new
-    resultOptimal$v0 = v0.opt ## <-- new 
-    ebic.opt = ebic.0S[index.c]
-  }
+
+    v0.opt = NULL
+    if (step == 2){
+      index.c = best_finite_index(ebic.post, "Step 2")
+
+      resultOptimal = step2.fit[[index.c[1]]][[index.c[2]]]
+      A.net.opt = A.net[[index.c[1]]][[index.c[2]]]
+      ebic.opt = ebic.post[index.c]
+      theta0.opt = theta0.ini
+    }
+
+    if (step == 3){
+      index.c = best_finite_index(ebic.0S, "Step 3")
+      resultOptimal = step3b.fit[[index.c[1]]][[index.c[2]]]
+      A.net.opt = A.net[[index.c[1]]][[index.c[2]]]
+      v0.opt = v0.s3[[index.c[1]]][[index.c[2]]]
+      ebic.opt = ebic.0S[index.c]
+      theta0.opt = theta0.s3[index.c[1], index.c[2]]
+    }
+
+    if (is.null(resultOptimal) || !is.list(resultOptimal) || is.null(resultOptimal$L) || is.null(resultOptimal$theta1)) {
+      stop("The selected GAR model is incomplete. Check convergence diagnostics before calling `model_selec()`.")
+    }
+    resultOptimal$theta0 = theta0.opt
+    resultOptimal$v0 = v0.opt
   } else {
-    p = nrow(resultList$refit[[1]][[1]]$A.net) ## Extract dimensionality
-    n.lambda.v = length(resultList$refit) ## Tuning parameter dimensions
+    if (is.null(n) || is.null(resultList$refit)) {
+      stop("`resultList` does not contain the metadata needed for model selection.")
+    }
+    p = nrow(resultList$refit[[1]][[1]]$A.net)
+    n.lambda.v = length(resultList$refit)
     n.net.thre = length(resultList$refit[[1]])
-    loglike.0S = matrix(NA, nrow = n.lambda.v, ncol = n.net.thre) ## Storage matrices
+    loglike.0S = matrix(NA, nrow = n.lambda.v, ncol = n.net.thre)
     bic.0S = loglike.0S
     ebic.0S = loglike.0S
-    
-    ## set gamma for ebic
-    if(p/n>0.5){## e.g., for p=100,n=100
-      gamma=1  ## eBIC parameter: p/n~1 set as 1; when p/n<0.5: set as 0.5 
-    }else{
-      gamma=0.5
+
+    if (p / n > 0.5){
+      gamma = 1
+    } else {
+      gamma = 0.5
     }
-    
-    ## Number of edges possible 
-    P.total=p*(p-1)/2
-    
-    for (j in 1:n.lambda.v){
-      for (k in 1:n.net.thre){
-        ## Extract results for every combination of tuning parameters
+
+    P.total = p * (p - 1) / 2
+
+    for (j in seq_len(n.lambda.v)){
+      for (k in seq_len(n.net.thre)){
         result.c = resultList$refit[[j]][[k]]
-        
-        ## Extract relevant info
-        S.c = result.c$S ## Sample Covariance of Residuals using Final Pass (pre-refit) estimate of R1
-        A.c = result.c$A.net # Zero-pattern for network
-        net.size.c = sum(A.c)/2 # Estimatedx network size
-        L.est = result.c$result.0S$L # 3 step L est
-        eta0.est = result.c$eta0.0S # refitted eta0 using Step 3 L
-        eta1.est = result.c$eta1.0S # refitted eta1 using Step 3 L
-        R1.est = result.c$R1.0S # refitted R1 using eta0, eta1, and L from step 3 of GAR
-        theta0.est = result.c$result.0S$theta0 # refitted theta0
-        theta1.est = result.c$result.0S$theta1 # refitted theta1
-        
-        ##############
-        ebic.term=2*gamma*(lfactorial(P.total)-lfactorial(net.size.c)-lfactorial(P.total-net.size.c))
-        ###############
-        
-        loglike.0S[j,k] = LogLike(S=S.c, theta0=theta0.est , theta1 = theta1.est, L.est, n-1)
-        bic.0S[j,k] = BIC(loglike.0S[j,k], n-1, net.size.c+3) ##here sample size is n-1!! (Do not account for the p components of v0)
-        ebic.0S[j,k] = bic.0S[j,k] + ebic.term          
+
+        S.c = result.c$S
+        A.c = result.c$A.net
+        net.size.c = sum(A.c) / 2
+        L.est = result.c$result.0S$L
+        theta0.est = result.c$result.0S$theta0
+        theta1.est = result.c$result.0S$theta1
+
+        ebic.term = 2 * gamma * (lfactorial(P.total) - lfactorial(net.size.c) - lfactorial(P.total - net.size.c))
+
+        loglike.0S[j, k] = LogLike(S = S.c, theta0 = theta0.est, theta1 = theta1.est, L.est, n - 1)
+        bic.0S[j, k] = BIC(loglike.0S[j, k], n - 1, net.size.c + 3)
+        ebic.0S[j, k] = bic.0S[j, k] + ebic.term
       }
     }
-    
-    ## select model with lowest eBIC
-    index.c = which(ebic.0S == min(ebic.0S, na.rm = T), arr.ind = T)
-    ebic.opt = ebic.0S[index.c[1], index.c[2]] ## Optimal eBIC
-    resultOptimal = resultList$refit[[index.c[1]]][[index.c[2]]] ## Optimal model
-    A.0.net.opt = resultOptimal$A.net ## Zero-Pattern
-  
+
+    index.c = which(ebic.0S == min(ebic.0S, na.rm = TRUE), arr.ind = TRUE)
+    ebic.opt = ebic.0S[index.c[1], index.c[2]]
+    resultOptimal = resultList$refit[[index.c[1]]][[index.c[2]]]
+    A.net.opt = resultOptimal$A.net
+    theta0.opt = resultOptimal$result.0S$theta0
+    v0.opt = resultOptimal$v0.est
+    resultOptimal$theta0 = theta0.opt
   }
-  
-  
-  ############################
-  ## Return the optimal lambda, net.thre, and goodness of fit test
-  ###########################
+
   colnames(index.c) = c("lambda", "net.thre")
   rownames(index.c) = "index"
-  retList = list("model.selec" = resultOptimal, "A.net.e" = A.0.net.opt, "ebic" = ebic.opt, "index" = index.c)
+
+  retList = list(
+    "selected.model" = resultOptimal,
+    "theta0" = theta0.opt,
+    "theta1" = resultOptimal$theta1,
+    "L" = resultOptimal$L,
+    "v0" = v0.opt,
+    "A.net.e" = A.net.opt,
+    "ebic" = ebic.opt,
+    "index" = index.c,
+    "lambda.v" = if (!is.null(resultList$lambda.v)) resultList$lambda.v[index.c[1]] else NULL,
+    "net.thre" = if (!is.null(resultList$net.thre)) resultList$net.thre[index.c[2]] else NULL
+  )
   return(retList)
 }

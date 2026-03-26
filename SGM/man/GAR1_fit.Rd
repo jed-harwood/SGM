@@ -51,16 +51,22 @@ GAR1_fit(
 \value{
 A list object
 \itemize{
-\item \code{S} The p by p estimated covariance matrix
-\item \code{result.L2.0} A list containing the Step 1a results
-\item \code{result.0.post} A list containing the Step 2a results
-\item \code{result.0S} A list containing the Step 3 results (NULL if \code{step<3})
-\item \code{A.0.net} A matrix that encodes the estimated graph topology (NULL if \code{step<2})
-\item \code{net.0.size} An integer containing the number of edges in the estimated graph (NULL if \code{step<2})
-\item \code{v0.0.est} A p by 1 matrix containing the estimated degree vector (NULL if \code{step<3})
-\item \code{theta0.0} A positive number. The estimated theta0 from Step 1 (and 2)
-\item \code{theta0.0S} A positive number. The estimated theta0 from Step 3 (NULL if \code{step<3})
-\item \code{conv.0.v0} A matrix containing convergence results for each combination of \code{lambda.v} (rows) and \code{net.thre} (columns) (NULL if \code{step<3})
+\item \code{S} The supplied covariance estimate.
+\item \code{nobs} The number of observations used to form \code{S}.
+\item \code{model} The fitted GAR model family.
+\item \code{step} The last step requested in the fitting procedure.
+\item \code{lambda.v} The sparsity tuning parameter sequence.
+\item \code{rho.v} The ADMM tuning parameter sequence.
+\item \code{net.thre} The graph-threshold sequence used in Steps 2 and 3.
+\item \code{theta0.init} The initial estimate of \code{theta0} from Step 0, used in Step 1 and Step 2.
+\item \code{theta0.s3} A matrix of Step 3b estimates for \code{theta0} (NULL if \code{step<3}).
+\item \code{A.net} A list of adjacency matrices defining the zero-patterns created in Step 1 and used in Steps 2 and 3.
+\item \code{step1} A list containing the Step 1 fits, indexed by \code{lambda.v}.
+\item \code{step2} A list containing the Step 2 fits, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<2}).
+\item \code{step3a} A list containing the Step 3a \code{v0} estimates, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<3}).
+\item \code{step3b} A list containing the Step 3b joint fits, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<3}).
+\item \code{v0.s3} A list containing the Step 3a \code{v0} estimates (NULL if \code{step<3}).
+\item \code{conv} A list of convergence diagnostics with components \code{step1}, \code{step2}, \code{step3a}, and \code{step3b}.
 }
 }
 \description{
@@ -70,21 +76,21 @@ A list object
 \dontrun{
 ### Load data
 load("data/stocks.Rda")
-n=nrow(stocks)
+nobs=nrow(stocks)
 p=ncol(stocks)
 model="LN"
 
 ### lambda and net.thre sequence
 C.v=c(8,4,1)
-lambda.v=C.v*sqrt(log(p)/n) 
+lambda.v=C.v*sqrt(log(p)/nobs) 
 rho.v=pmax(lambda.v, 0.01)
 
 C.thre=exp(seq(log(1),log(0.1), length.out=12))
-net.thre=C.thre*sqrt(log(p)/n) 
+net.thre=C.thre*sqrt(log(p)/nobs) 
 
 ### Run GAR1_fit
-S = var(stocks)*(n-1)/n
-resList = GAR1_fit(S, n, lambda.v, net.thre, model, verbose = T,
+S = var(stocks)*(nobs-1)/nobs
+resList = GAR1_fit(S, nobs, lambda.v, net.thre, model, verbose = T,
                   max_iter_1a = 100000, max_iter_2a = 100000, max_iter_3a = 100000) 
 }
 }
