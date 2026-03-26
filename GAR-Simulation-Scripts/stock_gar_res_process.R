@@ -31,14 +31,21 @@ get_info_gar = function(modelList, n){
   S = modelList$S # sample covariance matrix
   for (i in 1:n.lambda){ # ith lambda
     for (j in 1:n.thre){ # jth net.thre
+      result.ij = modelList$result.0S[[i]][[j]]
+      net.ij = modelList$A.0.net[[i]][[j]]
+      
+      ## Only evaluate models that produced a valid converged Step 3 fit.
+      if (is.null(result.ij) || !isTRUE(result.ij$conv) || length(result.ij$theta0) == 0) {
+        next
+      }
       
       ## Extract estimated parameters
-      L.ij = modelList$result.0S[[i]][[j]]$L
-      theta0.ij = modelList$result.0S[[i]][[j]]$theta0
-      theta1.ij = modelList$result.0S[[i]][[j]]$theta1
+      L.ij = result.ij$L
+      theta0.ij = result.ij$theta0
+      theta1.ij = result.ij$theta1
       
       ## Store the network size
-      net.size[i,j] = sum(modelList$A.0.net[[i]][[j]])/2
+      net.size[i,j] = sum(net.ij)/2
       log.likelihood.0S[i,j] = LogLike(S = S, theta0 = theta0.ij, theta1 = theta1.ij, L = L.ij, n = n)
       
     }
@@ -201,7 +208,6 @@ stock_results = function(modelList, model = "GAR", p, n, sp.num, S){
   
   return(resList)
 }
-
 
 
 

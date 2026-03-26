@@ -160,7 +160,7 @@ fit_step_3a_0 = function(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, v
         
         ## Raise warning if v0 didn't converge
         if (!isTRUE(temp$conv)){
-          warning(sprintf("v0 did not converge at (lambda.index=%d, net.thre.index=%d)", j, k))
+          warning(sprintf("v0 did not converge at (lambda.index=%d, net.thre.index=%d).  Replacing with zero vector.", j, k))
         }
         
         
