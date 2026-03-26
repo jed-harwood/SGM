@@ -138,11 +138,11 @@ fit_step_3a_0 = function(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, v
   ## Initialize Objects
   matrix(NA, length(lambda.v), length(net.thre)) 
   v0.0.est=vector("list",  length(lambda.v))
-  conv.0.v0=matrix(NA, length(lambda.v), length(net.thre)) 
+  conv.0.v0=matrix(FALSE, length(lambda.v), length(net.thre)) # 3/25/2026: Initialize to FALSE
   
   ## Extract result from previous steps
   result.0.post = step2a$result.0.post
-  
+  p = ncol(step0a$S)
   
   for (j in 1:length(lambda.v)){
     v0.0.est[[j]] = vector("list", length(net.thre))
@@ -152,12 +152,19 @@ fit_step_3a_0 = function(step0a, step2a, lambda.v, net.thre, eps_abs, eps_rel, v
       
       if(!is.null(result.c)&&result.c$conv){
         L.est = result.c$L
-        temp=try(ADMM.Deg.L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps.abs=1e-5, eps.rel=1e-3, max.iter=50000, verbose=FALSE))
+        temp=try(ADMM.Deg.L(L.est,rho=0.1, epsilon=sqrt(1/(2*ncol(L.est))), eps.abs=1e-5, eps.rel=1e-3, max.iter=100000, verbose=FALSE))
         
         if (inherits(temp, "try-error")){
           temp = list("v" = rep(0,p), "conv" = F)
         }
         
+        ## Raise warning if v0 didn't converge
+        if (!isTRUE(temp$conv)){
+          warning(sprintf("v0 did not converge at (lambda.index=%d, net.thre.index=%d)", j, k))
+        }
+        
+        
+        ## Update results
         v0.0.est[[j]][[k]]=temp$v
         conv.0.v0[j,k]=temp$conv
       }
