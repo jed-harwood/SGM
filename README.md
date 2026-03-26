@@ -226,7 +226,7 @@ S = var(gar1_data)*(nobs-1)/nobs
 fit = GAR1_fit(S, nobs, lambda.v, net.thre, model, 3, rho.v)
 
 ### Model selection via eBIC for the GAR estimator
-fit.gar1.3 = model_selec(fit)
+sel = model_selec(fit)
 
 ### Evaluation: estimation errors for theta0, theta1*L, and FDR and Power for graph inference 
 ## Get ground truth
@@ -237,22 +237,22 @@ theta0.tr = gar1$theta0 # True graph filter parameter
 theta1.tr = gar1$theta1 # True graph filter parameter
 
 ## Calculate estimation errors
-theta0.err.3 = abs(fit.gar1.3$theta0 - theta0.tr)^2
-L.err.3 = sum((fit.gar1.3$theta1 * fit.gar1.3$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
+theta0.err = abs(sel$theta0 - theta0.tr)^2
+L.err = sum((sel$theta1 * sel$L - theta1.tr*LN)^2)/sum((theta1.tr*LN)^2)
 
 ## Calculate FDR and Power 
-FDR.3 = sum(fit.gar1.3$A.net.e*(1-A.tr))/sum(fit.gar1.3$A.net.e)
-Power.3 = sum(fit.gar1.3$A.net.e*A.tr)/sum(A.tr)
+FDR = sum(sel$A.net.e*(1-A.tr))/sum(sel$A.net.e)
+Power = sum(sel$A.net.e*A.tr)/sum(A.tr)
 
 ## Network sizes
-net.size.3 = sum(fit.gar1.3$A.net.e)/2
+net.size = sum(sel$A.net.e)/2
 
 ## View results 
-c(theta0.err.3) # theta0 errors
-c(L.err.3) # L errors
-c(net.size.3) # network sizes
-c(Power.3) # Power
-c(FDR.3) # FDR
+c(theta0.err) # theta0 errors
+c(L.err) # L errors
+c(net.size) # network sizes
+c(Power) # Power
+c(FDR) # FDR
 
 ## Results:
 ## p=100; n=100; true network size = 105; 
