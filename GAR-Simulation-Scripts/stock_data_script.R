@@ -36,7 +36,7 @@ GAR1_gf(S = S, nobs = n, lambda.v = sqrt(log(p)/n), num.thread = 10, seed = 1)
 ## Fit the GAR model
 ######
 gar.stock = GAR1_fit(S = S, nobs = n, lambda.v = lambda.v, net.thre = net.thre, model = "LN",
-                     step = 3, rho.v = rho.v, verbose = FALSE)
+                     step = 3, rho.v = rho.v, verbose = FALSE, max_iter_3a = 100000)
 
 save(gar.stock, file = "gar_stock.rda")
 
