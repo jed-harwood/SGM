@@ -91,9 +91,9 @@ For more information on a given dataset, please run `?<dataname>`.
 | eps_thre | numeric scalar | 1e-6 | Small positive threshold used for numerical stability. |
 | eps_abs | numeric scalar | 1e-5 | Absolute tolerance for ADMM convergence. |
 | eps_rel | numeric scalar | 1e-3 | Relative tolerance for ADMM convergence. |
-| max_iter_1a | integer | 10000 | Maximum number of iterations for Step 1. |
-| max_iter_2a | integer | 10000 | Maximum number of iterations for Step 2. |
-| max_iter_3a | integer | 10000 | Maximum number of iterations for Step 3. |
+| max_iter_s1 | integer | 10000 | Maximum number of iterations for Step 1. |
+| max_iter_s2 | integer | 10000 | Maximum number of iterations for Step 2. |
+| max_iter_s3 | integer | 10000 | Maximum number of iterations for Step 3b, the joint estimation sub-step within Step 3. |
 | verbose | logical | FALSE | Logical flag indicating whether to print progress during fitting. |
 
 
@@ -123,10 +123,10 @@ For more information on a given dataset, please run `?<dataname>`.
 | theta0.init | numeric scalar | Initial estimate of \( \theta_0 \) from Step 0, used in Steps 1 and 2. |
 | theta0.s3 | numeric matrix | Matrix of Step 3b estimates for \( \theta_0 \) (NULL if `step < 3`). |
 | A.net | list | Estimated graph topologies indexed by `lambda.v` and `net.thre`, created in Step 1 and used in Steps 2 and 3. |
-| step1 | list | Step 1 fits indexed by `lambda.v`. |
-| step2 | list | Step 2 fits indexed by `lambda.v` and `net.thre` (NULL if `step < 2`). |
-| step3a | list | Step 3a `v0` estimates indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
-| step3b | list | Step 3b joint fits indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
+| step1 | list | Step 1 ADMM fit objects indexed by `lambda.v`. Each element is the returned output of `ADMM_L2`, including quantities such as `L`, `Z`, `W`, `theta0`, `theta1`, and `conv`, and Step 1 also defines the thresholded zero-patterns stored in `A.net`. |
+| step2 | list | Step 2 refit objects indexed by `lambda.v` and `net.thre` (NULL if `step < 2`). Each element is the returned output of `ADMM_L2_Zero`, containing the refitted `L`, `Z`, `W`, `theta0`, `theta1`, and `conv` for the corresponding zero-pattern from Step 1. |
+| step3a | list | Step 3a `v0` estimation results indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). Each element stores the estimated `v0` vector produced from the Step 2 Laplacian path. |
+| step3b | list | Step 3b joint estimation objects indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). Each element is the returned output of `ADMM_Lap_Zero`, containing the jointly refitted `L`, `theta0`, `theta1`, `Z`, `W`, `phi`, and `conv`. |
 | v0.s3 | list | Step 3a `v0` estimates indexed by `lambda.v` and `net.thre` (NULL if `step < 3`). |
 | conv | list | Convergence diagnostics stored as `conv$step1`, `conv$step2`, `conv$step3a`, and `conv$step3b`. |
 

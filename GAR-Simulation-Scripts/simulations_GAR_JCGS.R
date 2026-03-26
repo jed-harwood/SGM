@@ -142,7 +142,7 @@ results.GAR = foreach(i = 1:rep, .maxcombine=max(rep,2))%dopar%{
   S.i = var(data[[i]])*((n-1)/n) # Sufficent Statistic for Sigma
   GAR.i.res = SGM::GAR1_fit(S = S.i, nobs = n, lambda.v = lambda.v, net.thre = net.thre,
                             model = model, rho.v = rho.v, eps_thre = 1e-6, eps_abs = 1e-5,
-                            eps_rel = 1e-3, max_iter_3a = 10000, verbose=FALSE)
+                            eps_rel = 1e-3, max_iter_s3 = 10000, verbose=FALSE)
   
   ## Store results important results in a list
   res.i = list("S" = S.i, "conv" = GAR.i.res$conv, "step3b" = GAR.i.res$step3b,
@@ -485,4 +485,3 @@ table3.metric[2,] = c(mean(Sigma.sele.glasso), mean(Omega.sele.glasso), mean(fdr
 
 ## Print Results for Table 3: 
 print(table3.metric)
-

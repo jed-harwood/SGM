@@ -36,7 +36,7 @@ GAR1_gf(S = S, nobs = n, lambda.v = sqrt(log(p)/n), num.thread = 10, seed = 1)
 ## Fit the GAR model
 ######
 gar.stock = GAR1_fit(S = S, nobs = n, lambda.v = lambda.v, net.thre = net.thre, model = "LN",
-                     step = 3, rho.v = rho.v, verbose = FALSE, max_iter_1a = 100000, max_iter_2a = 100000, max_iter_3a = 100000)
+                     step = 3, rho.v = rho.v, verbose = FALSE, max_iter_s1 = 100000, max_iter_s2 = 100000, max_iter_s3 = 100000)
 
 save(gar.stock, file = "gar_stock.rda")
 
@@ -133,5 +133,4 @@ abline(v=glasso.size.selec+p, col=1, lty=2)
 legend("bottomright",  c("GAR","Glasso"), pch = c(2,1), col = c(2,1), cex = 0.5) 
 
 dev.off()
-
 

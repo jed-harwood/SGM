@@ -30,7 +30,7 @@ normalize_gar_model <- function(model) {
   stop("`model` must be one of \"LN\", \"L\", or \"LN.noselfloop\".")
 }
 
-validate_gar1_fit_inputs <- function(S, nobs, lambda.v, net.thre, model, step, rho.v, eps_thre, eps_abs, eps_rel, max_iter_1a, max_iter_2a, max_iter_3a) {
+validate_gar1_fit_inputs <- function(S, nobs, lambda.v, net.thre, model, step, rho.v, eps_thre, eps_abs, eps_rel, max_iter_s1, max_iter_s2, max_iter_s3) {
   if (!is.matrix(S) || !is.numeric(S) || nrow(S) != ncol(S) || any(!is.finite(S))) {
     stop("`S` must be a finite numeric square matrix.")
   }
@@ -55,9 +55,9 @@ validate_gar1_fit_inputs <- function(S, nobs, lambda.v, net.thre, model, step, r
   if (any(!is.finite(c(eps_thre, eps_abs, eps_rel))) || eps_thre <= 0 || eps_abs <= 0 || eps_rel <= 0) {
     stop("`eps_thre`, `eps_abs`, and `eps_rel` must be positive finite scalars.")
   }
-  iter.values = c(max_iter_1a, max_iter_2a, max_iter_3a)
+  iter.values = c(max_iter_s1, max_iter_s2, max_iter_s3)
   if (any(!is.finite(iter.values)) || any(iter.values <= 0) || any(iter.values != as.integer(iter.values))) {
-    stop("`max_iter_1a`, `max_iter_2a`, and `max_iter_3a` must be positive integer scalars.")
+    stop("`max_iter_s1`, `max_iter_s2`, and `max_iter_s3` must be positive integer scalars.")
   }
   invisible(model)
 }
@@ -94,7 +94,7 @@ fit_step_0a = function(S, nobs){
 ### Step 1: fit L given theta_0.e from Step 0 and obtain thresholded zero-patterns
 #############
 
-fit_step_1 = function(step0a, lambda.v, rho.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose){
+fit_step_1 = function(step0a, lambda.v, rho.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_s1, verbose){
   S = step0a$S
   theta0.e = step0a$theta0
 
@@ -106,7 +106,7 @@ fit_step_1 = function(step0a, lambda.v, rho.v, net.thre, model, eps_thre, eps_ab
   A.net = vector("list", length(lambda.v))
 
   for (j in seq_along(lambda.v)){
-    step1.fit[[j]] = ADMM_L2(S, theta0.e, rep(0, p), rho.v[j], lambda.v[j], model, Z, W, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
+    step1.fit[[j]] = ADMM_L2(S, theta0.e, rep(0, p), rho.v[j], lambda.v[j], model, Z, W, eps_thre, eps_abs, eps_rel, max_iter_s1, verbose)
 
     if (!is.null(step1.fit[[j]]) && isTRUE(step1.fit[[j]]$conv)) {
       A.net[[j]] = vector("list", length(net.thre))
@@ -134,7 +134,7 @@ fit_step_1 = function(step0a, lambda.v, rho.v, net.thre, model, eps_thre, eps_ab
 ### Step 2: refit L given the pattern from Step 1
 ############
 
-fit_step_2 = function(step0a, step1, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose){
+fit_step_2 = function(step0a, step1, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_s2, verbose){
   S = step0a$S
   theta0.e = step0a$theta0
   p = ncol(S)
@@ -153,7 +153,7 @@ fit_step_2 = function(step0a, step1, lambda.v, net.thre, model, eps_thre, eps_ab
       step2.fit[[j]] = vector("list", length(net.thre))
       for (k in seq_along(net.thre)){
         step2.fit[[j]][[k]] = ADMM_L2_Zero(S, theta0.e, v = rep(0, p), rho = sqrt(log(p) / n), A = A.net[[j]][[k]], model, Z_ini = Z, W_ini = W,
-                                           eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
+                                           eps_thre, eps_abs, eps_rel, max_iter_s2, verbose)
         conv.step2[j, k] = !is.null(step2.fit[[j]][[k]]) && isTRUE(step2.fit[[j]][[k]]$conv)
       }
     }
@@ -205,7 +205,7 @@ fit_step_3a = function(step0a, step2, lambda.v, net.thre, eps_abs, eps_rel, verb
 }
 
 ## Estimate theta0 and L simultaneously with 0-pattern from Step 1 and estimated v0 from Step 3a
-fit_step_3b = function(step0a, step1, step2, step3a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose){
+fit_step_3b = function(step0a, step1, step2, step3a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_s3, verbose){
   S = step0a$S
   n = step0a$n
   p = ncol(S)
@@ -228,7 +228,7 @@ fit_step_3b = function(step0a, step1, step2, step3a, lambda.v, net.thre, model, 
       if (isTRUE(conv.step3a[j, k])) {
         v0.e = v0.s3[[j]][[k]]
         step3b.fit[[j]][[k]] = ADMM_Lap_Zero(S, v0.e, rho = sqrt(log(p) / n), AA = A.net[[j]][[k]], model = model, ZZ_ini = Z, WW_ini = W, phi_ini = phi,
-                                             eps_thre = eps_thre, eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter_3a, Z_max_iter = 100000,
+                                             eps_thre = eps_thre, eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter_s3, Z_max_iter = 100000,
                                              Z_conv_abs = 1e-5, Z_conv_rel = 1e-3, verbose = verbose)
         theta0.s3[j, k] = step3b.fit[[j]][[k]]$theta0
         conv.step3b[j, k] = !is.null(step3b.fit[[j]][[k]]) && isTRUE(step3b.fit[[j]][[k]]$conv)
@@ -243,9 +243,9 @@ fit_step_3b = function(step0a, step1, step2, step3a, lambda.v, net.thre, model, 
   return(list("fit" = step3b.fit, "theta0.s3" = theta0.s3, "conv" = conv.step3b))
 }
 
-fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose){
+fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_s3, verbose){
   step_3a = fit_step_3a(step0a, step2, lambda.v, net.thre, eps_abs, eps_rel, verbose)
-  step_3b = fit_step_3b(step0a, step1, step2, step_3a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose)
+  step_3b = fit_step_3b(step0a, step1, step2, step_3a, lambda.v, net.thre, model, eps_thre, eps_abs, eps_rel, max_iter_s3, verbose)
 
   return(list(
     "step3a" = step_3a$v0.s3,
@@ -278,7 +278,9 @@ fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre,
 #' @param eps_thre Small positive number
 #' @param eps_abs ADMM convergence criterion
 #' @param eps_rel ADMM convergence criterion
-#' @param max_iter_1a, max_iter_2a, max_iter_3a Maximum number of iterations for algorithm
+#' @param max_iter_s1 Maximum number of iterations for Step 1.
+#' @param max_iter_s2 Maximum number of iterations for Step 2.
+#' @param max_iter_s3 Maximum number of iterations for Step 3b.
 #'
 #' @returns
 #' A list object
@@ -301,23 +303,23 @@ fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre,
 #'
 #' @example man-roxygen/GAR1_fit_example.R
 #' @export
-GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v = lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter_1a = 10000, max_iter_2a = 10000, max_iter_3a = 10000, verbose = FALSE){
+GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v = lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter_s1 = 10000, max_iter_s2 = 10000, max_iter_s3 = 10000, verbose = FALSE){
   model.input = model
   model.internal = normalize_gar_model(model)
-  validate_gar1_fit_inputs(S, nobs, lambda.v, net.thre, model.internal, step, rho.v, eps_thre, eps_abs, eps_rel, max_iter_1a, max_iter_2a, max_iter_3a)
+  validate_gar1_fit_inputs(S, nobs, lambda.v, net.thre, model.internal, step, rho.v, eps_thre, eps_abs, eps_rel, max_iter_s1, max_iter_s2, max_iter_s3)
 
   step0a = fit_step_0a(S, nobs)
   if (verbose) {
     print("Step 0a complete")
   }
 
-  step1 = fit_step_1(step0a, lambda.v, rho.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_1a, verbose)
+  step1 = fit_step_1(step0a, lambda.v, rho.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_s1, verbose)
   if (verbose) {
     print("Step 1 complete")
   }
 
   if (step >= 2){
-    step2 = fit_step_2(step0a, step1, lambda.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_2a, verbose)
+    step2 = fit_step_2(step0a, step1, lambda.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_s2, verbose)
     if (verbose) {
       print("Step 2 complete")
     }
@@ -326,7 +328,7 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v =
   }
 
   if (step == 3){
-    step3 = fit_step_3(step0a, step1, step2, lambda.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_3a, verbose)
+    step3 = fit_step_3(step0a, step1, step2, lambda.v, net.thre, model.internal, eps_thre, eps_abs, eps_rel, max_iter_s3, verbose)
     if (verbose) {
       print("Step 3 complete")
     }

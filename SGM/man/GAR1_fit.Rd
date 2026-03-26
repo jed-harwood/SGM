@@ -15,9 +15,9 @@ GAR1_fit(
   eps_thre = 1e-06,
   eps_abs = 1e-05,
   eps_rel = 0.001,
-  max_iter_1a = 10000,
-  max_iter_2a = 10000,
-  max_iter_3a = 10000,
+  max_iter_s1 = 10000,
+  max_iter_s2 = 10000,
+  max_iter_s3 = 10000,
   verbose = F
 )
 }
@@ -46,7 +46,11 @@ GAR1_fit(
 
 \item{eps_rel}{ADMM convergence criterion}
 
-\item{max_iter_1, }{max_iter_2, max_iter_3a Maximum number of iterations for algorithm}
+\item{max_iter_s1}{Maximum number of iterations for Step 1.}
+
+\item{max_iter_s2}{Maximum number of iterations for Step 2.}
+
+\item{max_iter_s3}{Maximum number of iterations for Step 3b.}
 }
 \value{
 A list object
@@ -61,10 +65,10 @@ A list object
 \item \code{theta0.init} The initial estimate of \code{theta0} from Step 0, used in Step 1 and Step 2.
 \item \code{theta0.s3} A matrix of Step 3b estimates for \code{theta0} (NULL if \code{step<3}).
 \item \code{A.net} A list of adjacency matrices defining the zero-patterns created in Step 1 and used in Steps 2 and 3.
-\item \code{step1} A list containing the Step 1 fits, indexed by \code{lambda.v}.
-\item \code{step2} A list containing the Step 2 fits, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<2}).
+\item \code{step1} A list containing the Step 1 ADMM fit objects, indexed by \code{lambda.v}.
+\item \code{step2} A list containing the Step 2 refit objects, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<2}).
 \item \code{step3a} A list containing the Step 3a \code{v0} estimates, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<3}).
-\item \code{step3b} A list containing the Step 3b joint fits, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<3}).
+\item \code{step3b} A list containing the Step 3b joint fit objects, indexed by \code{lambda.v} and \code{net.thre} (NULL if \code{step<3}).
 \item \code{v0.s3} A list containing the Step 3a \code{v0} estimates (NULL if \code{step<3}).
 \item \code{conv} A list of convergence diagnostics with components \code{step1}, \code{step2}, \code{step3a}, and \code{step3b}.
 }
@@ -91,6 +95,6 @@ net.thre=C.thre*sqrt(log(p)/nobs)
 ### Run GAR1_fit
 S = var(stocks)*(nobs-1)/nobs
 resList = GAR1_fit(S, nobs, lambda.v, net.thre, model, verbose = T,
-                  max_iter_1a = 100000, max_iter_2a = 100000, max_iter_3a = 100000) 
+                  max_iter_s1 = 100000, max_iter_s2 = 100000, max_iter_s3 = 100000) 
 }
 }
