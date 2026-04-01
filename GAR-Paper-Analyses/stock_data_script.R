@@ -11,7 +11,7 @@ for (i in rev(seq_along(sys.frames()))) {
   }
 }
 if (is.null(script_path)) {
-  script_path <- "GAR-Simulations/stock_data_script.R"
+  script_path <- "GAR-Paper-Analyses/stock_data_script.R"
 }
 script_dir <- dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
 

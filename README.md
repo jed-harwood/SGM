@@ -32,16 +32,16 @@ Most users will work with the `SGM` package directly:
 This repository has two main folders.
 
 * `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
-* `GAR-Simulations`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
+* `GAR-Paper-Analyses`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
 
-The `GAR-Simulations` folder contains:
+The `GAR-Paper-Analyses` folder contains:
 
 * simulation workflows for the GAR paper experiments,
 * stock-data preprocessing and fitting scripts,
 * post-processing utilities for summarizing selected GAR models, and
 * example analysis pipelines that use the `SGM` package API end to end.
 
-The `GAR-Simulations` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
+The `GAR-Paper-Analyses` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
 
 
 ## Installation 
