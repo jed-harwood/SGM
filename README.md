@@ -120,7 +120,7 @@ sel$v0
 | net.thre | numeric vector |  | Thresholding parameter used in Step 1 to remove noisy edges and define the zero-patterns used in later steps. |
 | model | character | "LN" | Type of graph Laplacian: "LN" (normalized Laplacian), "L" (graph Laplacian), or "LN.noselfloop" (normalized Laplacian without self-loops). |
 | step | integer | 3 | Number of steps in the estimation procedure (1, 2, or 3). |
-| rho.v | numeric vector | lambda.v | ADMM penalty parameter (typically set equal to `lambda.v`). |
+| rho.v | numeric vector | lambda.v | ADMM parameter (typically set equal to `lambda.v`). |
 | eps_thre | numeric scalar | 1e-6 | Small positive threshold used for numerical stability. |
 | eps_abs | numeric scalar | 1e-5 | Absolute tolerance for ADMM convergence. |
 | eps_rel | numeric scalar | 1e-3 | Relative tolerance for ADMM convergence. |
