@@ -33,15 +33,17 @@ GAR1_gf(
 
 \item{eps_rel}{ADMM convergence criterion.}
 
-\item{max_iter}{Number of iterations to run initial fit on observed data}
+\item{max_iter}{Number of iterations to run the Step 1 fit.}
+
+\item{num.thread}{Number of threads to use for computing.}
 
 \item{rep.boot}{Number of bootstrap samples to generate for test.}
 
-\item{num.threads}{Number of threads to use for computing.}
+\item{seed}{Random seed used for reproducibility.}
 }
 \value{
 p-value for the goodness of fit test
 }
 \description{
-This function provides a goodness of fit test to see whether a GAR(1) model with the normalized laplacian is applicable.  It is valid for when the signal dimension is a most the number of observations available.
+This function provides a goodness of fit test to see whether a GAR(1) model with the normalized Laplacian is applicable. It is valid when the signal dimension is at most the number of observations available.
 }
