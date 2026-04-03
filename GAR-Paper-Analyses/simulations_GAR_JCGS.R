@@ -22,21 +22,8 @@ library(foreach)
 library(mnormt)
 
 
-## Resolve script directory and load helper scripts
-script_path <- NULL
-for (i in rev(seq_along(sys.frames()))) {
-  if (!is.null(sys.frames()[[i]]$ofile)) {
-    script_path <- sys.frames()[[i]]$ofile
-    break
-  }
-}
-if (is.null(script_path)) {
-  script_path <- "GAR-Paper-Analyses/simulations_GAR_JCGS.R"
-}
-script_dir <- dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
-
-source(file.path(script_dir, "GenData.R"))
-source(file.path(script_dir, "simulation-auxiliary-scripts", "simulations_GAR_wrappers.R"))
+source("GenData.R")
+source("simulation-auxiliary-scripts/simulations_GAR_wrappers.R")
 
 
 #####################################
