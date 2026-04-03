@@ -3,25 +3,13 @@
 ## Requires: stock_data_processing.R, stockdata.rda ##
 ######################################################
 
-script_path <- NULL
-for (i in rev(seq_along(sys.frames()))) {
-  if (!is.null(sys.frames()[[i]]$ofile)) {
-    script_path <- sys.frames()[[i]]$ofile
-    break
-  }
-}
-if (is.null(script_path)) {
-  script_path <- "GAR-Paper-Analyses/stock_data_script.R"
-}
-script_dir <- dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
-
 ## Load SGM and the Stock data
-rm(list = setdiff(ls(), c("script_path", "script_dir")))
+rm(list=ls())
 library(SGM)
 
 ## Data Pre-processing Step
-source(file.path(script_dir, "stock-auxiliary-scripts", "stock_data_processing.R"))
-load(file.path(script_dir, "stock.data.X.Rdata"))
+source("stock-auxiliary-scripts/stock_data_processing.R")
+load("stock.data.X.Rdata")
 n=nrow(X)
 p=ncol(X)
 
@@ -50,7 +38,7 @@ GAR1_gf(S = S, nobs = n, lambda.v = sqrt(log(p)/n), num.thread = 10, seed = 1)
 gar.stock = GAR1_fit(S = S, nobs = n, lambda.v = lambda.v, net.thre = net.thre, model = "LN",
                      step = 3, rho.v = rho.v, verbose = FALSE, max_iter_s1 = 100000, max_iter_s2 = 100000, max_iter_s3 = 100000)
 
-save(gar.stock, file = file.path(script_dir, "gar_stock.rda"))
+save(gar.stock, file = "gar_stock.rda")
 
 ###################
 ## Fit the GLASSO 
@@ -77,7 +65,7 @@ for (j in 1:length(lambda.glasso)){
   ## Refit
   result.glasso.refit[[j]]=glasso(s = S, rho = 1e-10, nobs=n, zero=edge.zero, penalize.diagonal=FALSE)
 }
-save(result.glasso.refit, file = file.path(script_dir, "glasso_refit.rda"))
+save(result.glasso.refit, file = "glasso_refit.rda")
 
 
 
@@ -87,10 +75,10 @@ save(result.glasso.refit, file = file.path(script_dir, "glasso_refit.rda"))
 ############
 ## Model Evaluation
 #########
-load(file.path(script_dir, "gar_stock.rda"))
-load(file.path(script_dir, "glasso_refit.rda"))
+load("gar_stock.rda")
+load("glasso_refit.rda")
 
-source(file.path(script_dir, "stock-auxiliary-scripts", "stock_gar_res_process.R")) # Script for Processing Results; Gives function stock_results()
+source("stock-auxiliary-scripts/stock_gar_res_process.R") # Script for Processing Results; Gives function stock_results()
 
 ## Get results of Model Fits
 ### (GAR)
@@ -127,7 +115,7 @@ glasso.size.selec = GLASSO_res$size.selec
 
 
 ## Begin Plot comapring GLASSO to GAR
-pdf(file.path(script_dir, "stock-GAR1LN-loglike-GAR-vs-glasso.pdf"))
+pdf("stock-GAR1LN-loglike-GAR-vs-glasso.pdf")
 plot(GAR.net.size+1+p, GAR.log.like, xlab='# of parameters in model', ylab="log-likelihood", 
      xlim=range(GAR.net.size+1+p, glasso.net.size+p), 
      ylim=range(GAR.log.like,glasso.log.like), col=1, type='n')
