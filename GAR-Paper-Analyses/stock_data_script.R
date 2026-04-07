@@ -7,8 +7,8 @@
 rm(list=ls())
 library(SGM)
 
-## Data Pre-processing Step
-source("stock-auxiliary-scripts/stock_data_processing.R")
+## Load pre-processed data
+## for preprocessing steps, "/stock-auxiliary-scripts/stock_data_processing.R"
 load("stock.data.X.Rdata")
 n=nrow(X)
 p=ncol(X)
