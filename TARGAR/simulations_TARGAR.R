@@ -52,40 +52,81 @@ setup_targar_simulation_parallel(num.thread)
 #####################################
 #### Model Setup
 #####################################
-## Choose ar.order = 1, 2, or 3. The default configurations reproduce the
-## corresponding TAR-GAR simulation settings from the original scripts.
+## Manually set the simulation, as in simulations_GAR_JCGS.R.
+## Change these values directly for experiments.
 ar.order = 1
-config = targar_default_config(ar.order)
-
-## User-facing simulation settings. Change these values here for experiments.
-d = config$d
-n = config$n
-q = config$q
-n.rep = config$n_rep
-model = config$model
-theta0 = config$theta0
-theta1 = config$theta1
+d = 100
+n = 500
+q = 1
+n.rep = 100
+model = "LN"
+theta0 = 1
+theta1 = 2
 edge.prob = 2 / d
-num.pass = config$num.pass
+num.pass = 3
+stationary = FALSE
+
+graph.seed = 1
+data.seed = 5 * d + n
+
+lambda.C = c(1.5, 1, 0.5, 0.25, 0.1)
+graph.min = 0.5
+graph.max = 1
+selfloop = FALSE
+isolate = FALSE
+
+eps.thre = 1e-6
+max.iter = 50000
+deg.max.iter = 50000
+lap.z.max.iter = 50000
+eta.max.iter = 1000
+
+## True TAR-GAR filter coefficients. Edit this function when changing the
+## data-generating AR order or q.
+eta.builder = function(lambda.max) {
+  c(0.2, 0.7 / lambda.max)
+}
+
+case = paste0("TARGAR_order", ar.order, "_q", q)
 
 ## Output settings.
 save.results = TRUE
 keep.fits = TRUE
 output.dir = file.path(script.dir, "results")
 
-config$d = d
-config$n = n
-config$q = q
-config$n_rep = n.rep
-config$model = model
-config$theta0 = theta0
-config$theta1 = theta1
-config$edge.prob = edge.prob
-config$num.pass = num.pass
-config$num.thread = num.thread
-config$output_dir = output.dir
-config$save_results = save.results
-config$keep_fits = keep.fits
+config = list(
+  ar_order = ar.order,
+  fit_ar_order = ar.order,
+  q = q,
+  fit_q = q,
+  d = d,
+  n = n,
+  n_rep = n.rep,
+  model = model,
+  theta0 = theta0,
+  theta1 = theta1,
+  edge.prob = edge.prob,
+  graph_seed = graph.seed,
+  data_seed = data.seed,
+  graph_min = graph.min,
+  graph_max = graph.max,
+  selfloop = selfloop,
+  isolate = isolate,
+  lambda.C = lambda.C,
+  num.thread = num.thread,
+  num.pass = num.pass,
+  stationary = stationary,
+  eps.thre = eps.thre,
+  max_iter = max.iter,
+  deg_max_iter = deg.max.iter,
+  lap_z_max_iter = lap.z.max.iter,
+  eta_max_iter = eta.max.iter,
+  eta_builder = eta.builder,
+  case = case,
+  output_dir = output.dir,
+  save_results = save.results,
+  keep_fits = keep.fits
+)
 
 
 #####################################

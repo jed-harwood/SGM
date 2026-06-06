@@ -48,7 +48,15 @@ Edit the user-facing setup block in `simulations_TARGAR.R`:
 
 ```r
 ar.order = 1
-config = targar_default_config(ar.order)
+d = 100
+n = 500
+q = 1
+n.rep = 100
+model = "LN"
+theta0 = 1
+theta1 = 2
+edge.prob = 2 / d
+num.pass = 3
 ```
 
 Use:
@@ -80,10 +88,20 @@ observations.
 
 Use `simulations_TARGAR11_on_TARGAR_pq.R` for the simulations where the
 fitted model is fixed at TAR-GAR(p = 1, q = 1), but the data-generating model
-changes. In that script, edit:
+changes. In that script, edit the same manual setup variables:
 
 ```r
 data.ar.order = 1
+d = 100
+n = 100
+data.q = 3
+n.rep = 100
+model = "LN"
+theta0 = 1
+theta1 = 2
+edge.prob = 2 / d
+fit.ar.order = 1
+fit.q = 1
 ```
 
 Use:
