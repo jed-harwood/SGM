@@ -74,6 +74,13 @@ graph.seed = 1
 data.seed = 5 * d + n
 
 lambda.C = c(1.5, 1, 0.5, 0.25, 0.1)
+if (d == 100) {
+  C.thre = exp(seq(log(1), log(0.05), length.out = 10))
+} else if (d == 250) {
+  C.thre = exp(seq(log(1), log(0.075), length.out = 10))
+} else {
+  C.thre = exp(seq(log(1), log(0.1), length.out = 10))
+}
 graph.min = 0.5
 graph.max = 1
 selfloop = FALSE
@@ -118,6 +125,7 @@ config = list(
   selfloop = selfloop,
   isolate = isolate,
   lambda.C = lambda.C,
+  C.thre = C.thre,
   num.thread = num.thread,
   num.pass = num.pass,
   stationary = stationary,

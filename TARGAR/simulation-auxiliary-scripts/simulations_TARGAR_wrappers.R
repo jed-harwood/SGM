@@ -24,9 +24,11 @@ setup_targar_simulation_parallel <- function(num.thread) {
   invisible(num.thread)
 }
 
-first_min_index <- function(x) {
+legacy_min_index <- function(x) {
   idx = which(x == min(x, na.rm = TRUE), arr.ind = TRUE)
-  idx[1, , drop = FALSE]
+  ## Preserve the original simulation scripts' indexing. When eBIC has tied
+  ## minima, the old code used index.c[1] and index.c[2] on the arr.ind matrix.
+  matrix(c(idx[1], idx[2]), nrow = 1, dimnames = list(NULL, colnames(idx)))
 }
 
 relative_sq_error <- function(est, truth) {
@@ -276,6 +278,7 @@ targar_default_config <- function(ar_order = 1) {
     theta0 = 1,
     theta1 = 2,
     lambda.C = c(1.5, 1, 0.5, 0.25, 0.1),
+    C.thre = NULL,
     eps.thre = 1e-6,
     max_iter = 50000,
     deg_max_iter = 50000,
@@ -291,7 +294,7 @@ targar_default_config <- function(ar_order = 1) {
     base$q = 1
     base$num.thread = 25
     base$num.pass = 3
-    base$stationary = FALSE
+    base$stationary = TRUE
     base$eta_builder = function(lambda.max) {
       c(0.2, 0.7 / lambda.max)
     }
@@ -411,8 +414,9 @@ prepare_targar_simulation <- function(config) {
                        theta1 = config$theta1, L = L,
                        ar_order = ar_order)
 
+  C.thre = config$C.thre %||% targar_threshold_constants(d)
   lambda.v = config$lambda.C * sqrt(log(d) / n_eff)
-  net.thre = targar_threshold_constants(d) * sqrt(log(d) / n_eff)
+  net.thre = C.thre * sqrt(log(d) / n_eff)
   rho.v = pmax(lambda.v, 0.01)
 
   data_seed = config$data_seed %||% (5 * d + n)
@@ -423,7 +427,7 @@ prepare_targar_simulation <- function(config) {
   list(config = config, A = A, net.tr = net.tr, deg = deg, L = L,
        L.lam = L.lam, v0 = v0, eta = eta, eta.comp = eta.comp,
        truth = truth, lambda.v = lambda.v, net.thre = net.thre,
-       rho.v = rho.v, data = data, data_seed = data_seed,
+       C.thre = C.thre, rho.v = rho.v, data = data, data_seed = data_seed,
        n_eff = n_eff)
 }
 
@@ -697,7 +701,7 @@ select_targar_0S_ebic_metrics <- function(ebic.0S, net.size.refit,
                     nrow = dim(ebic.0S)[2],
                     ncol = dim(ebic.0S)[3])
     if (!all(is.infinite(ebic.i))) {
-      idx = first_min_index(ebic.i)
+      idx = legacy_min_index(ebic.i)
       j = idx[1, 1]
       k = idx[1, 2]
       ebic.0S.index[i, ] = c(j, k)

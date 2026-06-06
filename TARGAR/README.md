@@ -59,20 +59,40 @@ edge.prob = 2 / d
 num.pass = 3
 graph.seed = 1
 data.seed = 5 * d + n
+lambda.C = c(1.5, 1, 0.5, 0.25, 0.1)
+if (d == 100) {
+  C.thre = exp(seq(log(1), log(0.05), length.out = 10))
+} else if (d == 250) {
+  C.thre = exp(seq(log(1), log(0.075), length.out = 10))
+} else {
+  C.thre = exp(seq(log(1), log(0.1), length.out = 10))
+}
 ```
 
 Use:
 
 | `ar.order` | Default setting |
 |---|---|
-| `1` | TAR-GAR order 1, `q = 1`, `n = 500`, `num.pass = 3`, `stationary = FALSE`. |
+| `1` | TAR-GAR order 1, `q = 1`, `n = 500`, `num.pass = 3`, `stationary = TRUE`. |
 | `2` | TAR-GAR order 2, `q = 3`, `n = 500`, `num.pass = 3`. |
 | `3` | TAR-GAR order 3, `q = 3`, `n = 100`, `num.pass = 5`. |
 
 All three defaults use `d = 100`, `model = "LN"`, `theta0 = 1`,
 `theta1 = 2`, `edge.prob = 2 / d`, the `lambda.v` grid
-`c(1.5, 1, 0.5, 0.25, 0.1) * sqrt(log(d) / (n - ar.order))`, and the
-same `net.thre` constant grids used in the original simulation scripts.
+`lambda.C * sqrt(log(d) / (n - ar.order))`, and the `net.thre` grid
+`C.thre * sqrt(log(d) / (n - ar.order))`.
+
+The original `C.thre` defaults are kept:
+
+```r
+if (d == 100) {
+  C.thre = exp(seq(log(1), log(0.05), length.out = 10))
+} else if (d == 250) {
+  C.thre = exp(seq(log(1), log(0.075), length.out = 10))
+} else {
+  C.thre = exp(seq(log(1), log(0.1), length.out = 10))
+}
+```
 
 The data generator uses the model-specific initialization directly:
 
@@ -110,6 +130,14 @@ fit.ar.order = 1
 fit.q = 1
 graph.seed = 1
 data.seed = 5 * d + n
+lambda.C = c(1.5, 1, 0.5, 0.25, 0.1)
+if (d == 100) {
+  C.thre = exp(seq(log(1), log(0.05), length.out = 10))
+} else if (d == 250) {
+  C.thre = exp(seq(log(1), log(0.075), length.out = 10))
+} else {
+  C.thre = exp(seq(log(1), log(0.1), length.out = 10))
+}
 ```
 
 Use:

@@ -139,12 +139,30 @@ Weighted.D <- function(Phi, weights, diag.gamma) {
   2 * crossprod(Phi, Phi * (weights * diag.gamma))
 }
 
-Filter.from.eta <- function(eta.block, eigen.L, q) {
+Filter.from.eta <- function(eta.block, eigen.L, q, symmetrize = TRUE) {
   lambda = eigen.L$values
   Phi = Phi.L(lambda, q)
   spec = as.numeric(Phi %*% eta.block)
   R = eigen.L$vectors %*% diag(spec, length(spec)) %*% t(eigen.L$vectors)
-  (R + t(R)) / 2
+  if (symmetrize) {
+    R = (R + t(R)) / 2
+  }
+  R
+}
+
+Filter.from.eta.legacy <- function(eta.block, eigen.L, q,
+                                   symmetrize = FALSE) {
+  d = length(eigen.L$values)
+  lambda = eigen.L$values
+  Q = t(eigen.L$vectors)
+  R = diag(eta.block[1], d)
+  for (j in 2:(q + 1)) {
+    R = R + eta.block[j] * (t(Q) %*% diag(lambda^(j - 1), d) %*% Q)
+  }
+  if (symmetrize) {
+    R = (R + t(R)) / 2
+  }
+  R
 }
 
 Eta.data <- function(data, L) {
@@ -441,23 +459,29 @@ eta.nlr.mod <- function(data, L, theta0, p, q, eps_thre = 1e-6,
     loss = result$objective
     conv = result$status
   } else {
-    eta = try(solve(D.loss, d.loss), silent = TRUE)
-    if (inherits(eta, "try-error")) {
+    result = try(quadprog::solve.QP(
+      Dmat = D.loss, dvec = d.loss,
+      Amat = matrix(0, nrow = ncol(D.loss), ncol = 1), bvec = 0
+    ), silent = TRUE)
+    if (inherits(result, "try-error")) {
       return(NULL)
     }
-    eta = as.numeric(eta)
-    loss = loss.eta(D.loss, d.loss, eta)
+    eta = result$solution
+    loss = result$value
     conv = TRUE
-    result = NULL
   }
 
   bsz = q + 1
-  R1 = Filter.from.eta(eta[1:bsz], eigen.L, q)
-  R2 = Filter.from.eta(eta[(bsz + 1):(2 * bsz)], eigen.L, q)
-  R3 = Filter.from.eta(eta[(2 * bsz + 1):(3 * bsz)], eigen.L, q)
+  R1 = Filter.from.eta.legacy(eta[1:bsz], eigen.L, q)
+  R2 = Filter.from.eta.legacy(eta[(bsz + 1):(2 * bsz)], eigen.L, q)
+  R3 = Filter.from.eta.legacy(eta[(2 * bsz + 1):(3 * bsz)], eigen.L, q)
+  R1.sym = (R1 + t(R1)) / 2
+  R2.sym = (R2 + t(R2)) / 2
+  R3.sym = (R3 + t(R3)) / 2
 
   list(result = result, eta = eta,
        R_list = list(R1 = R1, R2 = R2, R3 = R3),
+       R_symmetric_list = list(R1 = R1.sym, R2 = R2.sym, R3 = R3.sym),
        R1 = R1, R2 = R2, R3 = R3, loss = loss, conv = conv)
 }
 
@@ -639,12 +663,16 @@ step.lap.est <- function(data, resList, p, q, A.net.e, lambda.v, net.thre,
         conv.3 = conv.3,
         A.net = A.c,
         R_list = if (is.null(eta.refit)) NULL else eta.refit$R_list,
+        R_symmetric_list =
+          if (is.null(eta.refit)) NULL else eta.refit$R_symmetric_list,
         eta = if (is.null(eta.refit)) NULL else eta.refit$eta,
         eta.0S = if (is.null(eta.refit)) NULL else eta.refit$eta,
         time = time.refit
       )
       if (!is.null(eta.refit)) {
         item = add.R.fields(item, eta.refit$R_list, suffix = ".0S")
+        item = add.R.fields(item, eta.refit$R_symmetric_list,
+                            suffix = ".0S.sym")
       }
       results[[j]][[k]] = item
     }
@@ -761,6 +789,7 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
     time.start = proc.time()[3]
     eta = NULL
     fit.L.theta1 = NULL
+    R.sym.list = NULL
     S.i = NULL
     theta0.i = NULL
     conv.step.1.i = FALSE
@@ -800,6 +829,7 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
       }
       eta = fit.eta$eta
       R.list = fit.eta$R_list
+      R.sym.list = fit.eta$R_symmetric_list
       if (verbose) {
         message("step 2/3 complete")
       }
@@ -812,9 +842,13 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
           eta.ini = eta,
           S.ini = S.i,
           theta0.ini = theta0.i,
+          R_symmetric_list = R.sym.list,
           conv.step1 = conv.step.1.i
         )
         ini.item = add.R.fields(ini.item, R.ini, suffix = ".ini")
+        if (!is.null(R.sym.list)) {
+          ini.item = add.R.fields(ini.item, R.sym.list, suffix = ".sym")
+        }
         iniRes[[j]] = ini.item
       }
     }
@@ -829,9 +863,13 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
       theta1 = fit.L.theta1$theta1,
       eta = eta,
       R_list = R.list,
+      R_symmetric_list = R.sym.list,
       conv.step1 = conv.step.1.i
     )
     res.item = add.R.fields(res.item, R.list)
+    if (!is.null(R.sym.list)) {
+      res.item = add.R.fields(res.item, R.sym.list, suffix = ".sym")
+    }
     resList[[j]] = res.item
     if (verbose) {
       message(paste("Pass", i, "complete"))
