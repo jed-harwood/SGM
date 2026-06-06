@@ -185,6 +185,7 @@ summary.tables = summarize_targar_metrics(targar.results)
 ## Selected 0S/eBIC metrics
 summary.tables$L.0S.ebic.err
 summary.tables$theta.0S.ebic.err
+summary.tables$R.0S.ebic.err
 summary.tables$eta.0S.ebic.err
 summary.tables$power.0S.ebic
 summary.tables$fdr.0S.ebic

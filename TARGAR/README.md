@@ -132,7 +132,7 @@ simulations and stores the full eBIC path. Important outputs include:
 |---|---|
 | `targar.results$L.0S.ebic.err` | Relative squared error for the eBIC-selected 0S Laplacian estimate. |
 | `targar.results$theta.0S.ebic.err` | Squared error for the eBIC-selected 0S `theta0` estimate. |
-| `targar.results$R1.0S.ebic.err`, etc. | Relative squared error for selected TAR filters. Higher-order runs include `R2.0S.ebic.err` and `R3.0S.ebic.err` as appropriate. |
+| `targar.results$R1.0S.ebic.err`, etc. | Relative squared error for each data-generating TAR filter `R_1, ..., R_p`. In TAR-GAR(1,1)-on-TAR-GAR(p,q) runs, unestimated higher lags are treated as zero fitted matrices. |
 | `targar.results$eta.0S.ebic.err` | Squared error for selected eta coefficients. |
 | `targar.results$power.0S.ebic` | Power for selected graph recovery. |
 | `targar.results$fdr.0S.ebic` | FDR for selected graph recovery. |

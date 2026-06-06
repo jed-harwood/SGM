@@ -556,12 +556,12 @@ extract_targar_metrics <- function(results, setup) {
   fdr.refit = array(NA, dim = dims)
   time.refit = array(NA, dim = dims)
   eta.refit.0S.err = array(NA, dim = c(dims, fit_ar_order * (fit_q + 1)))
-  R.refit.0S.err = vector("list", fit_ar_order)
-  for (r in seq_len(fit_ar_order)) {
+  R.refit.0S.err = vector("list", ar_order)
+  for (r in seq_len(ar_order)) {
     R.refit.0S.err[[r]] = array(NA, dim = dims)
   }
   names(R.refit.0S.err) =
-    paste0("R", seq_len(fit_ar_order), ".refit.0S.err")
+    paste0("R", seq_len(ar_order), ".refit.0S.err")
 
   log.like.0S = array(NA, dim = dims)
   bic.0S = array(Inf, dim = dims)
@@ -597,9 +597,13 @@ extract_targar_metrics <- function(results, setup) {
             relative_sq_error(L.est * theta1.est, setup$L * config$theta1)
           v0.0S.err[i, j, k] = sum((item$v0.est - setup$v0)^2)
 
-          for (r in seq_len(fit_ar_order)) {
-            R.est = extract_refit_R(item, r)
-            if (!is.null(R.est)) {
+          for (r in seq_len(ar_order)) {
+            R.est = if (r <= fit_ar_order) {
+              extract_refit_R(item, r)
+            } else {
+              matrix(0, d, d)
+            }
+            if (!is.null(R.est) && !is.null(setup$truth[[paste0("R", r)]])) {
               R.refit.0S.err[[r]][i, j, k] =
                 relative_sq_error(R.est, setup$truth[[paste0("R", r)]])
             }
@@ -739,6 +743,8 @@ summarize_targar_metrics <- function(metrics) {
   })
   summaries$mean.ebic.0S.selec = meanNA(metrics$ebic.0S.selec)
   summaries$mean.ebic.0S.path = apply(metrics$ebic.0S, c(2, 3), meanNA)
+  R_names = grep("^R[0-9]+\\.0S\\.ebic\\.err$", names(metrics), value = TRUE)
+  summaries$R.0S.ebic.err = lapply(metrics[R_names], summary, na.rm = TRUE)
   summaries
 }
 
