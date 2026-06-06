@@ -2,12 +2,12 @@
 % Please edit documentation in R/ADMM_GAR1_fit_proc_package.R
 \name{model_selec}
 \alias{model_selec}
-\title{Select tuning parameters for GAR(1) model}
+\title{Select tuning parameters for GAR(1) or TAR-GAR model}
 \usage{
 model_selec(resultList)
 }
 \arguments{
-\item{resultList}{A list output from \code{GAR1_fit}}
+\item{resultList}{A list output from \code{GAR1_fit} or \code{TARGAR_fit}.}
 }
 \value{
 A list object
@@ -22,8 +22,12 @@ A list object
 \item \code{lambda.v}: The selected \code{lambda.v} value.
 \item \code{net.thre}: The selected \code{net.thre} value.
 \item \code{ebic}: ebic score for the selected model.
+\item \code{R_list}: For TAR-GAR fits, the selected AR filter matrices.
+\item \code{eta}: For TAR-GAR fits, the selected polynomial filter coefficients.
+\item \code{p}, \code{q}: For TAR-GAR fits, the AR order and polynomial order.
 }
 }
 \description{
-Given a fitted GAR(1) model path from \code{GAR1_fit}, uses the eBIC criterion to select the appropriate tuning parameters.
+Given a fitted model path from \code{GAR1_fit} or \code{TARGAR_fit}, uses the eBIC
+criterion to select the appropriate tuning parameters.
 }

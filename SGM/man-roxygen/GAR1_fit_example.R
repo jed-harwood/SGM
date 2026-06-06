@@ -16,5 +16,5 @@ net.thre=C.thre*sqrt(log(p)/n)
 ### Run GAR1_fit
 S = var(stocks)*(n-1)/n
 resList = GAR1_fit(S, n, lambda.v, net.thre, model, verbose = T,
-                  max_iter_1a = 100000, max_iter_2a = 100000, max_iter_3a = 100000) 
+                  max_iter_s1 = 100000, max_iter_s2 = 100000, max_iter_s3 = 100000) 
 }

@@ -7,12 +7,14 @@ Author: Jedidiah Harwood, Jie Peng
 Maintainer: Jedidiah Harwood <jedharwood@ucdavis.edu>
 Description: Provides a set of methods that learn a latent graph, from stationary signals.
 License: GPL (>= 2)
+Encoding: UTF-8
 Imports: 
   Rcpp (>= 1.0.4),
   doParallel (>= 1.0.8),
   foreach (>= 1.2.0),
   gmp (>= 0.7-4),
   mnormt (>= 2.1.1),
+  nloptr (>= 2.0.0),
   quadprog (>= 1.5-8)
 LinkingTo: Rcpp, RcppEigen, BH
 NeedsCompilation: yes

@@ -2,10 +2,34 @@
 % Please edit documentation in R/TAR_GAR_fit.R
 \name{TARGAR_fit}
 \alias{TARGAR_fit}
-\title{TAR-GAR Fitting Procedure}
+\alias{fit_TAR_GAR}
+\title{TAR-GAR fitting procedure}
 \usage{
 TARGAR_fit(
   data,
+  lambda.v,
+  net.thre,
+  rho.v = lambda.v,
+  num.pass = 2,
+  model = "LN",
+  p = 1,
+  q = 1,
+  eps.thre = 1e-06,
+  eps_abs = 1e-05,
+  eps_rel = 0.001,
+  max_iter = 50000,
+  deg_max_iter = 50000,
+  lap_z_max_iter = max_iter,
+  eta_max_iter = 1000,
+  stationary = TRUE,
+  verbose = FALSE,
+  max.iter.eta = NULL
+)
+
+fit_TAR_GAR(
+  data,
+  p,
+  q,
   lambda.v,
   net.thre,
   rho.v = lambda.v,
@@ -15,66 +39,106 @@ TARGAR_fit(
   eps_abs = 1e-05,
   eps_rel = 0.001,
   max_iter = 50000,
-  refit = 2,
-  verbose = F
+  deg_max_iter = 50000,
+  lap_z_max_iter = max_iter,
+  eta_max_iter = 1000,
+  stationary = TRUE,
+  verbose = FALSE,
+  max.iter.eta = NULL
 )
 }
 \arguments{
-\item{data}{An n-by-p matrix}
+\item{data}{An n by d numeric data matrix, with rows ordered in time.}
 
-\item{lambda.v}{A vector of positive numbers.  These values are tuning parameters for the TAR-GAR procedure.}
+\item{lambda.v}{Positive tuning parameter sequence controlling graph
+sparsity.}
 
-\item{net.thre}{A vector of positive numbers.  These values are tuning parameters for the TAR-GAR procedure.}
+\item{net.thre}{Non-negative threshold sequence used to define graph
+zero-patterns for the final refit.}
 
-\item{rho.v}{A vector of positive numbers.  The step size for the ADMM algorithm.  Set to \code{lambda.v} by default.}
+\item{rho.v}{Positive ADMM parameter sequence. Defaults to \code{lambda.v}.}
 
-\item{num.pass}{A positive integer.  Indicates how many passes to run before refitting. Three passes is recommended.}
+\item{num.pass}{Positive integer number of alternating TAR-GAR passes before
+the final refit. Defaults to 2.}
 
-\item{model}{A character.  Either \code{"LN"}, \code{"LN.noselfloop"}, or \code{"L"}.  Corresponds to GAR structure of the TAR-GAR innovation term.}
+\item{model}{One of \code{"LN"}, \code{"L"}, or \code{"LN.noselfloop"}, matching the GAR
+structure used for the innovation covariance.}
 
-\item{eps.thre}{A small positive number.}
+\item{p}{AR order. Must be 1, 2, or 3. Defaults to 1 for compatibility with
+the original package API.}
 
-\item{eps_abs}{A small positive number.  Refers to ADMM stopping criteria. By default, set to 1e-5.}
+\item{q}{Polynomial order in the graph Laplacian. Must be a positive
+integer. Defaults to 1.}
 
-\item{eps_rel}{A small positive number.  Refers to ADMM stopping criteria.  By default, set to 1e-3.}
+\item{eps.thre}{Small positive numerical threshold. Defaults to 1e-6.}
 
-\item{max_iter}{A large positive integer.  Refers to ADMM stopping criteria.  By default, set to 50000.}
+\item{eps_abs}{Absolute ADMM convergence tolerance. Defaults to 1e-5.}
 
-\item{refit}{An integer.  Indicated number of steps in the GAR fitting procedure to use in the refitting step of the TAR-GAR procedure.  By default, set to 2 (indicates to use full GAR fitting procedure).}
+\item{eps_rel}{Relative ADMM convergence tolerance. Defaults to 1e-3.}
 
-\item{verbose}{A boolean.  Setting to TRUE prints out trace of the fitting procedure.}
+\item{max_iter}{Maximum number of ADMM iterations. Defaults to 50000.}
+
+\item{deg_max_iter}{Maximum number of iterations for the degree-vector ADMM
+refit. Defaults to 50000.}
+
+\item{lap_z_max_iter}{Maximum number of inner Z updates in the Laplacian
+refit. Defaults to \code{max_iter}.}
+
+\item{eta_max_iter}{Maximum number of eta optimization iterations for the
+p = 3 nonlinear program. Defaults to 1000.}
+
+\item{stationary}{Logical flag indicating whether to impose stationarity
+constraints while fitting the TAR filters. Defaults to TRUE.}
+
+\item{verbose}{Logical flag indicating whether to print progress.}
+
+\item{max.iter.eta}{Backward-compatible alias for \code{eta_max_iter}.}
 }
 \value{
-A list containing:
+A list with class \code{"TARGAR_fit"} containing:
 \itemize{
-\item \code{result.pass}: A list corresponding to the fitting results, pre-refitting.  Length is equivalent to \code{length(lambda.v)}.
-\item \code{ini}: A list corresponding to the initial fitting results and first pass.  Length is equivalent to \code{length(lambda.v)}.
-\item \code{refit}: A list corresponding to the final estimates using the TAR-GAR procedure.  Contains a collection of lists, with inner index corresponding to \verb{lambda index}, and outer index corresponding to \code{net.thre} index.
-\item \code{A.net}: A list of matrices containing the zero-pattern of the estimated network.   Contains a collection of matrices, with inner index corresponding to \verb{lambda index}, and outer index corresponding to \code{net.thre} index.
-\item \code{time.total}: Total time to run the TAR-GAR procedure on the specified sequence of tuning parameters.
+\item \code{result.pass}: pre-refit results indexed by \code{lambda.v}.
+\item \code{ini}: first-pass initial estimates indexed by \code{lambda.v}.
+\item \code{refit}: final refit results indexed by \code{lambda.v} and \code{net.thre}.
+\item \code{A.net}: thresholded graph zero-patterns indexed by \code{lambda.v} and
+\code{net.thre}.
+\item \code{p}, \code{q}, \code{lambda.v}, \code{rho.v}, \code{net.thre}, \code{model}, and timing metadata.
 }
+
+\code{model_selec()} can be used on the returned object to select a final model
+with the same workflow used for \code{GAR1_fit()}.
 }
 \description{
-Using the TAR-GAR fitting procedure, infers the (normalized) graph Laplacian matrix of a latent graph from temporally dependent data.  Fits to a sequence of tuning parameters (\code{lambda.v}, \code{net.thre}).
+\code{TARGAR_fit()} fits a TAR-GAR(p,q) model to temporally dependent
+multivariate data. It alternates between estimating AR filter matrices
+\code{R1}, ..., \code{Rp} and estimating the latent graph Laplacian for the
+innovation process, then refits the graph over the supplied \code{net.thre}
+sequence.
 }
 \examples{
 \dontrun{
-  ### Load data
-  load("data/stocks.Rda")
-  n=nrow(stocks)
-  p=ncol(stocks)
-  model="LN"
-  
-  ### lambda and net.thre sequence
-  C.v=c(8,4,1)
-  lambda.v=C.v*sqrt(log(p)/(n-1)) 
-  rho.v=pmax(lambda.v, 0.01)
-  
-  C.thre=exp(seq(log(1),log(0.1), length.out=12))
-  net.thre=C.thre*sqrt(log(p)/(n-1)) 
-  
-  ### Run GAR1_fit
-  resList = TARGAR_fit(stocks, lambda.v, net.thre, rho.v, num.pass = 3)
+library(SGM)
+data("targar")
 
+y = targar$data
+n = nrow(y)
+d = ncol(y)
+
+lambda.v = c(1, 0.5) * sqrt(log(d) / (n - 1))
+rho.v = pmax(lambda.v, 0.01)
+net.thre = exp(seq(log(1), log(0.1), length.out = 5)) *
+  sqrt(log(d) / (n - 1))
+
+fit = TARGAR_fit(
+  y, lambda.v = lambda.v, net.thre = net.thre, rho.v = rho.v,
+  p = 1, q = 1, num.pass = 2, model = "LN"
+)
+sel = model_selec(fit)
+
+sel$theta0
+sel$theta1
+sel$L
+sel$R_list
 }
+
 }

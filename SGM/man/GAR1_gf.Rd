@@ -23,9 +23,9 @@ GAR1_gf(
 
 \item{nobs}{The number of observations used to calculate \code{S}}
 
-\item{lambda.v}{Tuning parameter for GAR(1).  Positive number.}
+\item{lambda.v}{Tuning parameter for GAR(1). Positive number.}
 
-\item{rho.v}{ADMM parameter.  Positive number.}
+\item{rho.v}{ADMM parameter. Positive number.}
 
 \item{eps_thre}{Small positive number.}
 
@@ -37,7 +37,7 @@ GAR1_gf(
 
 \item{num.thread}{Number of threads to use for computing.}
 
-\item{rep.boot}{Number of bootstrap samples to generate for test.}
+\item{rep.boot}{Number of bootstrap samples to generate for the test.}
 
 \item{seed}{Random seed used for reproducibility.}
 }

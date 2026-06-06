@@ -27,6 +27,11 @@ Most users will work with the `SGM` package directly:
 3. Select a final model with `model_selec()`.
 4. Extract `theta0`, `theta1`, `L`, and `v0` from the selected model.
 
+For temporally dependent signals with explicit autoregressive graph filters,
+use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
+rhythm: fit a path over `lambda.v` and `net.thre`, select with
+`model_selec()`, then inspect the selected Laplacian and AR filter matrices.
+
 ## Repository Layout
 
 This repository has two main folders.
@@ -50,7 +55,7 @@ The `GAR-Paper-Analyses` folder is separate from the `SGM` package itself and is
 Please make sure that the following packages are installed before using the R package `SGM`. 
 
 ```
-install.packages(c("doParallel", "foreach", "gmp"))
+install.packages(c("doParallel", "foreach", "gmp", "mnormt", "quadprog", "nloptr"))
 ```
 
 ### Installation from the Repository
@@ -62,11 +67,12 @@ install_github(repo="jed-harwood/SGM", subdir="SGM")
 
 ## Datasets
 
-This repository currently contains two datasets.  To load a dataset into the working environment, run `data("<dataname>")`.  
+This repository currently contains three datasets.  To load a dataset into the working environment, run `data("<dataname>")`.  
 
 
 * `gar1`: A sample simulated from an underlying GAR(1) model, with p=100, n=100. The underlying graph was a random graph with edge probability 0.02.
 * `stocks`: A collection of (standardized) log-returns from 283 stocks on the S\&P 500.  The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.  The stocks come from five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials.
+* `targar`: A sample simulated from an underlying TAR-GAR model, with p=100 nodes and n=100 observations.
 
 These datasets can be accessed as the following R objects.
 
@@ -78,6 +84,13 @@ These datasets can be accessed as the following R objects.
 
 
 `stocks`: A 1007 by 283 matrix.
+
+`targar`: A list object that contains:
+1. `data`: data simulated under a TAR-GAR model.
+2. `A.tr`: the true weighted adjacency matrix for the underlying graph.
+3. `LN`: the true normalized graph Laplacian matrix.
+4. `theta0`, `theta1`: the true innovation graph filter parameters.
+5. `eta0`, `eta1`: the true TAR filter parameters for the included example.
 
 
 For more information on a given dataset, please run `?<dataname>`.  
@@ -96,6 +109,8 @@ For more information on a given dataset, please run `?<dataname>`.
 
 `model_selec`: conduct model selection via the eBIC criterion.
 
+`TARGAR_fit`: fit a `TAR-GAR(p,q)` model for a given set of tuning parameters. Here `p` is the AR order, not the dimension of the data. The packaged TAR-GAR implementation supports `p = 1`, `p = 2`, and `p = 3`; `q` is the polynomial order in the graph Laplacian. The defaults match the original hard-coded pipeline: `q = 1`, `num.pass = 2`, `model = "LN"`, `eps.thre = 1e-6`, `eps_abs = 1e-5`, `eps_rel = 1e-3`, `max_iter = 50000`, `deg_max_iter = 50000`, `eta_max_iter = 1000`, and `stationary = TRUE`.
+
 Typical workflow:
 
 ```r
@@ -106,6 +121,28 @@ sel$theta0
 sel$theta1
 sel$L
 sel$v0
+```
+
+TAR-GAR workflow:
+
+```r
+fit <- TARGAR_fit(data, lambda.v, net.thre, rho.v = rho.v,
+                  p = 1, q = 1, model = "LN")
+sel <- model_selec(fit)
+
+sel$theta0
+sel$theta1
+sel$L
+sel$R_list
+sel$eta
+```
+
+The compatibility wrapper `fit_TAR_GAR()` is also exported for script-style
+usage:
+
+```r
+fit <- fit_TAR_GAR(data, p = 1, q = 1,
+                   lambda.v = lambda.v, net.thre = net.thre)
 ```
 
 ### Arguments
@@ -134,7 +171,30 @@ sel$v0
 
 | Parameter | Data type | Default | Description |
 |-----------|-----------|---------|-------------|
-| resultList | list |  | A list output from `GAR1_fit`. The required metadata, including `nobs`, `step`, and `model`, are read directly from this object. |
+| resultList | list |  | A list output from `GAR1_fit` or `TARGAR_fit`. The required metadata are read directly from this object. |
+
+
+**Table: Arguments for `TARGAR_fit`**
+
+| Parameter | Data type | Default | Description |
+|-----------|-----------|---------|-------------|
+| data | matrix |  | Time-ordered data matrix with observations in rows. |
+| lambda.v | numeric vector |  | Tuning parameter controlling sparsity of the estimated graph. |
+| net.thre | numeric vector |  | Thresholding parameter used to remove noisy edges and define final refit zero-patterns. |
+| rho.v | numeric vector | lambda.v | ADMM parameter sequence, typically set to `lambda.v` or `pmax(lambda.v, 0.01)`. |
+| num.pass | integer | 2 | Number of alternating TAR-GAR passes before final refitting. |
+| model | character | "LN" | Innovation graph model: "LN", "L", or "LN.noselfloop". |
+| p | integer | 1 | AR order; must be 1, 2, or 3. |
+| q | integer | 1 | Polynomial order in the graph Laplacian; must be positive. |
+| eps.thre | numeric scalar | 1e-6 | Small positive threshold used for numerical stability and stationarity constraints. |
+| eps_abs | numeric scalar | 1e-5 | Absolute tolerance for ADMM convergence. |
+| eps_rel | numeric scalar | 1e-3 | Relative tolerance for ADMM convergence. |
+| max_iter | integer | 50000 | Maximum number of ADMM iterations. |
+| deg_max_iter | integer | 50000 | Maximum number of iterations for the degree-vector ADMM refit. |
+| lap_z_max_iter | integer | max_iter | Maximum number of inner Z updates in the Laplacian refit. |
+| eta_max_iter | integer | 1000 | Maximum number of eta optimization iterations for the `p = 3` nonlinear program. |
+| stationary | logical | TRUE | Whether to impose stationarity constraints while fitting TAR filters. |
+| verbose | logical | FALSE | Logical flag indicating whether to print progress during fitting. |
 
 
 
@@ -181,6 +241,9 @@ For most applications, you do not need to inspect `step1`, `step2`, `step3a`, or
 | lambda.v | numeric scalar | Selected value of `lambda.v`. |
 | net.thre | numeric scalar | Selected value of `net.thre`. |
 | ebic | numeric scalar | eBIC score of the selected model. |
+| R_list | list | For TAR-GAR fits, selected AR filter matrices `R1`, ..., `Rp`. |
+| eta | numeric vector | For TAR-GAR fits, selected polynomial filter coefficients. |
+| p, q | integer | For TAR-GAR fits, selected model AR order and polynomial order metadata. |
 
 
 
@@ -262,6 +325,53 @@ c(FDR) # FDR
 ## Power: 0.9238095
 ## FDR: 0.05825243
 ```
+
+
+### Fit `TAR-GAR(p,q)` to the simulated `targar` data.
+
+```
+library(SGM)
+
+data("targar")
+
+targar_data = targar$data
+nobs = nrow(targar_data)
+d = ncol(targar_data)
+
+model = "LN"
+ar.order = 1
+poly.order = 1
+
+C.v = c(1, 0.5)
+lambda.v = C.v * sqrt(log(d) / (nobs - ar.order))
+rho.v = pmax(lambda.v, 0.01)
+
+C.thre = exp(seq(log(1), log(0.1), length.out = 5))
+net.thre = C.thre * sqrt(log(d) / (nobs - ar.order))
+
+fit = TARGAR_fit(
+  targar_data,
+  lambda.v = lambda.v,
+  net.thre = net.thre,
+  rho.v = rho.v,
+  p = ar.order,
+  q = poly.order,
+  num.pass = 2,
+  model = model
+)
+
+sel = model_selec(fit)
+
+sel$theta0
+sel$theta1
+sel$L
+sel$R_list
+sel$eta
+```
+
+For higher-order TAR-GAR models, set `p = 2` or `p = 3`. The `p = 3` path
+uses the nonlinear eta optimizer from `nloptr`; the `p = 1` and `p = 2`
+paths use quadratic programs from `quadprog`.
 
 
 

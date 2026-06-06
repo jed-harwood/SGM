@@ -152,7 +152,7 @@ fit_step_2 = function(step0a, step1, lambda.v, net.thre, model, eps_thre, eps_ab
     if (isTRUE(conv.step1[j])) {
       step2.fit[[j]] = vector("list", length(net.thre))
       for (k in seq_along(net.thre)){
-        step2.fit[[j]][[k]] = ADMM_L2_Zero(S, theta0.e, v = rep(0, p), rho = sqrt(log(p) / n), A = A.net[[j]][[k]], model, Z_ini = Z, W_ini = W,
+        step2.fit[[j]][[k]] = ADMM_L2_Zero(S, theta0.e, v = rep(0, p), rho = sqrt(log(p) / n), AA = A.net[[j]][[k]], model, Z_ini = Z, W_ini = W,
                                            eps_thre, eps_abs, eps_rel, max_iter_s2, verbose)
         conv.step2[j, k] = !is.null(step2.fit[[j]][[k]]) && isTRUE(step2.fit[[j]][[k]]$conv)
       }
@@ -281,6 +281,7 @@ fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre,
 #' @param max_iter_s1 Maximum number of iterations for Step 1.
 #' @param max_iter_s2 Maximum number of iterations for Step 2.
 #' @param max_iter_s3 Maximum number of iterations for Step 3b.
+#' @param verbose Logical flag indicating whether to print progress.
 #'
 #' @returns
 #' A list object
@@ -372,12 +373,13 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v =
 ####################################
 ## eBIC and log-likelihood selection
 ######
-#' Select tuning parameters for GAR(1) model
+#' Select tuning parameters for GAR(1) or TAR-GAR model
 #'
 #' @description
-#' Given a fitted GAR(1) model path from `GAR1_fit`, uses the eBIC criterion to select the appropriate tuning parameters.
+#' Given a fitted model path from `GAR1_fit` or `TARGAR_fit`, uses the eBIC
+#' criterion to select the appropriate tuning parameters.
 #'
-#' @param resultList A list output from `GAR1_fit`.
+#' @param resultList A list output from `GAR1_fit` or `TARGAR_fit`.
 #'
 #' @returns A list object
 #' * `selected.model`: A list containing the ADMM output for the selected model.
@@ -390,6 +392,9 @@ GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v =
 #' * `lambda.v`: The selected `lambda.v` value.
 #' * `net.thre`: The selected `net.thre` value.
 #' * `ebic`: ebic score for the selected model.
+#' * `R_list`: For TAR-GAR fits, the selected AR filter matrices.
+#' * `eta`: For TAR-GAR fits, the selected polynomial filter coefficients.
+#' * `p`, `q`: For TAR-GAR fits, the AR order and polynomial order.
 #'
 #' @export
 model_selec = function(resultList){
@@ -400,8 +405,11 @@ model_selec = function(resultList){
   n = if (!is.null(resultList$nobs)) resultList$nobs else resultList$n
   step = if (!is.null(resultList$step)) resultList$step else 3
   model = if (!is.null(resultList$model)) resultList$model else "TARGAR"
+  is.targar = inherits(resultList, "TARGAR_fit") ||
+    identical(resultList$fit.type, "TARGAR") ||
+    (!is.null(resultList$refit) && !is.null(resultList$result.pass))
 
-  if (model %in% c("LN", "L", "LN.noselfloop", "LN.noloop")){
+  if (!is.targar && model %in% c("LN", "L", "LN.noselfloop", "LN.noloop")){
     if (is.null(resultList$S) || is.null(resultList$nobs)) {
       stop("`resultList` must be an object returned by `GAR1_fit()`.")
     }
@@ -521,46 +529,81 @@ model_selec = function(resultList){
     if (is.null(n) || is.null(resultList$refit)) {
       stop("`resultList` does not contain the metadata needed for model selection.")
     }
-    p = nrow(resultList$refit[[1]][[1]]$A.net)
+    ar.order = if (!is.null(resultList$p)) resultList$p else 1
+    q.order = if (!is.null(resultList$q)) resultList$q else 1
+    n.resid = if (!is.null(resultList$n.resid)) resultList$n.resid else n - ar.order
+    d = nrow(resultList$refit[[1]][[1]]$A.net)
     n.lambda.v = length(resultList$refit)
     n.net.thre = length(resultList$refit[[1]])
     loglike.0S = matrix(NA, nrow = n.lambda.v, ncol = n.net.thre)
     bic.0S = loglike.0S
     ebic.0S = loglike.0S
 
-    if (p / n > 0.5){
+    if (d / n.resid > 0.5){
       gamma = 1
     } else {
       gamma = 0.5
     }
 
-    P.total = p * (p - 1) / 2
+    P.total = d * (d - 1) / 2
+    n.param.base = 1 + ar.order * (q.order + 1)
 
     for (j in seq_len(n.lambda.v)){
       for (k in seq_len(n.net.thre)){
         result.c = resultList$refit[[j]][[k]]
+        if (is.null(result.c) || is.null(result.c$A.net) ||
+            is.null(result.c$S)) {
+          next
+        }
 
         S.c = result.c$S
         A.c = result.c$A.net
         net.size.c = sum(A.c) / 2
-        L.est = result.c$result.0S$L
-        theta0.est = result.c$result.0S$theta0
-        theta1.est = result.c$result.0S$theta1
+        L.est = result.c$L
+        theta0.est = result.c$theta0
+        theta1.est = result.c$theta1
+
+        if (is.null(L.est) && !is.null(result.c$result.0S)) {
+          L.est = result.c$result.0S$L
+          theta0.est = result.c$result.0S$theta0
+          theta1.est = result.c$result.0S$theta1
+        }
+        if (is.null(L.est) && !is.null(result.c$result.0.post)) {
+          L.est = result.c$result.0.post$L
+          theta0.est = result.c$theta0.ini
+          theta1.est = result.c$result.0.post$theta1
+        }
+        if (is.null(L.est) || is.null(theta0.est) || is.null(theta1.est) ||
+            !is.finite(theta0.est) || !is.finite(theta1.est)) {
+          next
+        }
 
         ebic.term = 2 * gamma * (lfactorial(P.total) - lfactorial(net.size.c) - lfactorial(P.total - net.size.c))
 
-        loglike.0S[j, k] = LogLike(S = S.c, theta0 = theta0.est, theta1 = theta1.est, L.est, n - 1)
-        bic.0S[j, k] = BIC(loglike.0S[j, k], n - 1, net.size.c + 3)
+        loglike.0S[j, k] = LogLike(S = S.c, theta0 = theta0.est, theta1 = theta1.est, L = L.est, n = n.resid)
+        bic.0S[j, k] = BIC(loglike.0S[j, k], n.resid, net.size.c + n.param.base)
         ebic.0S[j, k] = bic.0S[j, k] + ebic.term
       }
     }
 
-    index.c = which(ebic.0S == min(ebic.0S, na.rm = TRUE), arr.ind = TRUE)
+    index.c = best_finite_index(ebic.0S, "TAR-GAR")
     ebic.opt = ebic.0S[index.c[1], index.c[2]]
     resultOptimal = resultList$refit[[index.c[1]]][[index.c[2]]]
     A.net.opt = resultOptimal$A.net
-    theta0.opt = resultOptimal$result.0S$theta0
+    theta0.opt = resultOptimal$theta0
     v0.opt = resultOptimal$v0.est
+    if ((is.null(resultOptimal$L) || is.null(resultOptimal$theta1)) &&
+        !is.null(resultOptimal$result.0S)) {
+      resultOptimal$L = resultOptimal$result.0S$L
+      resultOptimal$theta1 = resultOptimal$result.0S$theta1
+      theta0.opt = resultOptimal$result.0S$theta0
+    }
+    if ((is.null(resultOptimal$L) || is.null(resultOptimal$theta1)) &&
+        !is.null(resultOptimal$result.0.post)) {
+      resultOptimal$L = resultOptimal$result.0.post$L
+      resultOptimal$theta1 = resultOptimal$result.0.post$theta1
+      theta0.opt = resultOptimal$theta0.ini
+    }
     resultOptimal$theta0 = theta0.opt
   }
 
@@ -577,7 +620,11 @@ model_selec = function(resultList){
     "ebic" = ebic.opt,
     "index" = index.c,
     "lambda.v" = if (!is.null(resultList$lambda.v)) resultList$lambda.v[index.c[1]] else NULL,
-    "net.thre" = if (!is.null(resultList$net.thre)) resultList$net.thre[index.c[2]] else NULL
+    "net.thre" = if (!is.null(resultList$net.thre)) resultList$net.thre[index.c[2]] else NULL,
+    "R_list" = resultOptimal$R_list,
+    "eta" = resultOptimal$eta,
+    "p" = if (!is.null(resultList$p)) resultList$p else NULL,
+    "q" = if (!is.null(resultList$q)) resultList$q else NULL
   )
   return(retList)
 }

@@ -1,484 +1,983 @@
 ###############################
-## TAR-GAR Fitting Functions
-## Added: 2025-02-22
-## TAR GAR Fitting Procedure and Necessary Functions;
-## Using Version A of Fitting Procedure
+## TAR-GAR(p,q) fitting
+##
+## Here p is the AR order, not the node dimension.
+## The implementation supports AR orders p = 1, 2, and 3.
 ###############################
 
+AutoCov <- function(data, order = 0, symmetrize = c("all", "order0", "none"),
+                    transpose.lag = FALSE) {
+  data = as.matrix(data)
+  symmetrize = match.arg(symmetrize)
+  n = nrow(data)
+  d = ncol(data)
 
-
-###############################
-### PREREQUISITE FUNCTIONS  ###
-###############################
-
-#' Calculate sample auto-covariance matrix at lag=`order`
-#' 
-#' @description
-#' Calculates the sample autocovariance matrix at a specified lag/ordering.
-#' 
-#' @param data n by p data matrix
-#' @param order nonnegative integer
-#' 
-#' @returns Returns a p-by-p symmetric matrix.
-#' 
-AutoCov<-function(data, order=0){
-  ## data: n by p data matrix
-  ## order: nonnegative integer 
-  ## return: Gamma_order: p by p symmetric matrix 
-  
-  n= nrow(data) ## sample size 
-  p = ncol(data)
-  
-  if(order<0 || order>n-1){
+  if (order < 0 || order > n - 1) {
     stop("order must be an integer between {0,..., n-1}")
   }
-  
-  data.m=matrix(apply(data, 2, mean), n, p, byrow=TRUE) ## mean matrix
-  data.c=data-data.m  ## centered data 
-  
-  
-  data.c.pre=data.c[1: (n-order),] ##(n-order) by p 
-  data.c.lag=data.c[(1+order):n, ]
-  
-  result=(t(data.c.pre)%*%data.c.lag)/(n-order) ## Gamma_order: when order=0, this should be the same as var(data)*(n-1)/n
-  result=(result+t(result))/2 ## symmetrizing 
-  
-  return(result) 
-  
-}
 
+  data.m = matrix(apply(data, 2, mean), n, d, byrow = TRUE)
+  data.c = data - data.m
+  data.c.pre = data.c[1:(n - order), , drop = FALSE]
+  data.c.lag = data.c[(1 + order):n, , drop = FALSE]
 
-#' Initial Estimate of Filter Matrix
-#' 
-#' @description
-#' Calculates an initial estimate of the graph filter matrix R1. 
-#' 
-#' @param data An n by p data matrix
-#' @param eps.thre Threshold for pseudoinverse of Gamma0
-#' 
-#' @returns A p by p symmetrix matrix
-
-step.00 <-function(data,  eps.thre=1e-6){
-  ## data: n by p data matrix
-  ##  eps.thre: threshold for pseudo inverse of Gamma0
-  ##  return: R1 : p by p symmetric
-  
-  p=ncol(data)
-  ##
-  Gamma0=AutoCov(data, order=0)
-  Gamma0.eigen=eigen(Gamma0, symmetric=TRUE)
-  
-  Gamma0.lam=Gamma0.eigen$values
-  Gamma0.lam=pmax(Gamma0.lam,0) ## remove small negative values due to rounding error  
-  
-  ## Gamma0^{-0.5}: use pseudo inverse when Gamma0 is singular 
-  Gamma0.lam.neg0.5=numeric(p)
-  Gamma0.lam.neg0.5[Gamma0.lam>eps.thre]=(Gamma0.lam[Gamma0.lam>eps.thre])^{-0.5}
-  Gamma0.neg0.5=(Gamma0.eigen$vectors)%*%diag(Gamma0.lam.neg0.5)%*%t(Gamma0.eigen$vectors)
-  
-  ## R1 estimate 
-  Gamma1=AutoCov(data, order=1)
-  R1=Gamma0.neg0.5%*%Gamma1%*%Gamma0.neg0.5
-  R1=(R1+t(R1))/2 ## remove asymmetry due to rounding error 
-  
-  ##
-  return(R1)
-}
-
-
-#' Sample covariance of the innovation process  
-#' 
-#' @description
-#' Calculates the sample covariance of the innovation process, and the corresponding theta0 estimate, given a filter matrix R1
-#' 
-#' @param data n by p matrix
-#' @param R1 p by p matrix
-#' 
-#' @returns A list containing:
-#' * `S`: A p by p sample covariance matrix of the innovation process
-#' * `theta0`: A positive number
-#' 
-step.0 <-function(data, R1){
-  ## data: n by p data matrix
-  ## R1: p by p TAR filter 
-  ## return: S: p by p sample covariance of the innovation process U.t= Y.t-R1%*%Y.{t-1}	
-  ## theta0: nonnegative scalar
-  n = nrow(data)
-  data.pre=data[1:(n-1),] ## (n-1) by p: from t=1,...,n-1
-  data.lag=data[2:n,] ##(n-1) by p: from t=2,..,n
-  residual=data.lag-data.pre%*%R1 ## (n-1) by p: innovation process  
-  
-  S=var(residual)*(n-2)/(n-1)
-  theta0=(max(eigen(S, symmetric=TRUE)$values))^{-0.5}
-  
-  return(list(S=S, theta0=theta0))
-}
-
-
-
-#' Step 2 of TAR-GAR Fitting Procedure
-#' 
-#' @description
-#' Estimate the filter parameters (eta0, eta1) given (theta0, L), through a quadratic program with linear inequality constraints
-#' 
-#' @param data An n by p data matrix
-#' @param L A p by p (normalized) Laplacian Matrix
-#' @param theta0 A positive number
-#' @param eps A (small) positive number
-#' @importFrom quadprog solve.QP
-step.2 <- function(data, L, theta0, eps=1e-6){
-  ## data: n by p data matrix
-  ## L: p by p Laplacian; p.s.d.
-  ## theta0: positive scalar 
-  ## eps: small positive values to bound |eta0+eta1*lambda_j|<= 1-eps
-  ## center data:
-  n=nrow(data)
-  p=ncol(data)
-  
-  data.m=matrix(apply(data, 2, mean), n, p, byrow=TRUE) ## mean matrix
-  data.c=data-data.m  ## centered data 
-  
-  ## eigen-decomposition of the Laplacian 
-  eigen.L=eigen(L, symmetric=TRUE)
-  Q=t(eigen.L$vectors)  ##  L= t(Q)%*%diag(lambda)%*%Q
-  lambda=eigen.L$values
-  
-  ## transform data by L's eigenvectors 
-  data.tilde= data.c%*%t(Q)
-  
-  ## Gamma0 and Gamma1 of the transformed data 
-  Gamma0 = t(data.tilde[2:n,])%*%data.tilde[2:n,]/(n-1)
-  Gamma1 = t(data.tilde[2:n,])%*%data.tilde[1:(n-1),]/(n-1)
-  Gamma1 = (Gamma1+t(Gamma1))/2
-  
-  ## QP components
-  ## dvec 
-  d.1= 2*sum((theta0+lambda)^2*diag(Gamma1))
-  d.2= 2*sum(lambda*(theta0+lambda)^2*diag(Gamma1))
-  d=c(d.1,d.2)
-  
-  #Dmat
-  d.11= 2*sum((theta0+lambda)^2*diag(Gamma0))
-  d.22= 2*sum(lambda^2*(theta0+lambda)^2*diag(Gamma0))
-  d.12= 2*sum(lambda*(theta0+lambda)^2*diag(Gamma0))
-  D=matrix(c(d.11, d.12, d.12, d.22), 2,2)
-  
-  #Amat: 2 by (2p) 
-  A.left=rbind(rep(1,p), lambda)
-  A.right=-A.left
-  A=cbind(A.left, A.right)
-  
-  #bvec: (2p) by 1 
-  b=rep(-1,2*p)+eps
-  
-  # minimize -d^T eta + 1/2*eta^T D eta subject: A^T eta >= b
-  result=try(solve.QP(Dmat=D, dvec=d, Amat=A, bvec=b))
-  if(is(result, "try-error")){
-    return(NULL)
-    
-  }else{
-    # return eta and R1
-    eta = result$solution
-    R1=diag(eta[1],p)+eta[2]*L
+  result = (t(data.c.pre) %*% data.c.lag) / (n - order)
+  if (transpose.lag) {
+    result = t(result)
   }
-  
-  #
-  return(list(result=result, eta=eta, R1=R1))
+  if (symmetrize == "all" || (symmetrize == "order0" && order == 0)) {
+    result = (result + t(result)) / 2
+  }
+
+  result
 }
 
+Stack.targar <- function(data, p) {
+  data = as.matrix(data)
+  n = nrow(data)
+  d = ncol(data)
 
-#' Step 3 of TAR-GAR Fitting Procedure
-#' 
-#' @description
-#' Update R1  given the estimated (eta0, eta1) and L parameters from steps 0-to-2.
-#' 
-#' @param eta0 A number
-#' @param eta1 A number
-#' @param L A p-by-p matrix
-step.3 = function(eta0, eta1, L){
-  p = nrow(L)
-  R1 = diag(eta0, p)+eta1*L
-  return(R1)
+  if (!p %in% 1:3) {
+    stop("p must be the AR order 1, 2, or 3")
+  }
+  if (n <= p) {
+    stop("data must have more rows than the AR order p")
+  }
+  if (p == 1) {
+    return(data)
+  }
+
+  dataStack = matrix(NA, nrow = n - p + 1, ncol = p * d)
+  for (i in p:n) {
+    dataStack[i - p + 1, ] = unlist(lapply(0:(p - 1), function(lag) {
+      data[i - lag, ]
+    }), use.names = FALSE)
+  }
+
+  dataStack
 }
 
-##########################################################################
-## Extra Step: Re-estimate Final-Pass L using net.thre values, 
-##             with option to jointly estimate theta0 and L, or separately.
-##########################################################################
+PseudoInverseSym <- function(S, eps.thre = 1e-6, power = -1) {
+  S.eigen = eigen(S, symmetric = TRUE)
+  S.lam = pmax(S.eigen$values, 0)
+  S.lam.inv = numeric(length(S.lam))
+  S.lam.inv[S.lam > eps.thre] = S.lam[S.lam > eps.thre]^power
+  S.eigen$vectors %*% diag(S.lam.inv, length(S.lam.inv)) %*%
+    t(S.eigen$vectors)
+}
 
-#' Thresholding Step
-#' 
-#' @description
-#' Use net.thre values to invoke sparsity in final pass estimate of L.  Takes in resList from final pass, and produces list of zero-patterns
-#' @param resList Output from passes of TAR-GAR fitting procedure
-#' @param lambda.v A vector of positive numbers
-#' @param net.thre A vector of (small) positive numbers
-step.thre = function(resList, lambda.v, net.thre){
+R.initial <- function(data, p, q = NULL, eps.thre = 1e-6) {
+  data = as.matrix(data)
+  d = ncol(data)
+
+  if (!p %in% 1:3) {
+    stop("p must be the AR order 1, 2, or 3")
+  }
+
+  if (p == 1) {
+    Gamma0 = AutoCov(data, order = 0, symmetrize = "all")
+    Gamma1 = AutoCov(data, order = 1, symmetrize = "all")
+    Gamma0.neg0.5 = PseudoInverseSym(Gamma0, eps.thre = eps.thre,
+                                     power = -0.5)
+    R1 = Gamma0.neg0.5 %*% Gamma1 %*% Gamma0.neg0.5
+    R1 = (R1 + t(R1)) / 2
+    return(list(R1 = R1))
+  }
+
+  data.stacked = Stack.targar(data, p)
+  Gamma0 = AutoCov(data.stacked, order = 0, symmetrize = "order0",
+                   transpose.lag = TRUE)
+  Gamma1 = AutoCov(data.stacked, order = 1, symmetrize = "order0",
+                   transpose.lag = TRUE)
+  Gamma0.inv = PseudoInverseSym(Gamma0, eps.thre = eps.thre, power = -1)
+
+  ## For AR order p > 1, use the unsymmetrized companion estimate
+  ## Gamma1 Gamma0^+ rather than the symmetrized whitening transform.
+  A = Gamma1 %*% Gamma0.inv
+
+  R.list = vector("list", p)
+  for (k in 1:p) {
+    R.list[[k]] = A[1:d, ((k - 1) * d + 1):(k * d), drop = FALSE]
+  }
+  names(R.list) = paste0("R", 1:p)
+
+  R.list
+}
+
+S.theta0 <- function(data, R_list, p = length(R_list)) {
+  data = as.matrix(data)
+  n = nrow(data)
+
+  if (n <= p) {
+    stop("data must have more rows than the AR order p")
+  }
+  if (length(R_list) != p) {
+    stop("R_list length must match AR order p")
+  }
+
+  residual = data[(p + 1):n, , drop = FALSE]
+  for (k in 1:p) {
+    lag.data = data[(p + 1 - k):(n - k), , drop = FALSE]
+    residual = residual - lag.data %*% R_list[[k]]
+  }
+
+  S = stats::var(residual) * (n - p - 1) / (n - p)
+  theta0 = (max(eigen(S, symmetric = TRUE)$values))^(-0.5)
+
+  list(S = S, theta0 = theta0)
+}
+
+Phi.L <- function(lambda, q) {
+  outer(lambda, 0:q, "^")
+}
+
+Weighted.d <- function(Phi, weights, diag.gamma) {
+  2 * colSums(Phi * (weights * diag.gamma))
+}
+
+Weighted.D <- function(Phi, weights, diag.gamma) {
+  2 * crossprod(Phi, Phi * (weights * diag.gamma))
+}
+
+Filter.from.eta <- function(eta.block, eigen.L, q) {
+  lambda = eigen.L$values
+  Phi = Phi.L(lambda, q)
+  spec = as.numeric(Phi %*% eta.block)
+  R = eigen.L$vectors %*% diag(spec, length(spec)) %*% t(eigen.L$vectors)
+  (R + t(R)) / 2
+}
+
+Eta.data <- function(data, L) {
+  data = as.matrix(data)
+  n = nrow(data)
+  d = ncol(data)
+  data.m = matrix(apply(data, 2, mean), n, d, byrow = TRUE)
+  data.c = data - data.m
+  eigen.L = eigen(L, symmetric = TRUE)
+  Q = t(eigen.L$vectors)
+  data.tilde = data.c %*% t(Q)
+
+  list(data.tilde = data.tilde, eigen.L = eigen.L, lambda = eigen.L$values)
+}
+
+QP.TAR.eta.p1 <- function(data, L, theta0, q = 1, eps = 1e-6,
+                          stationary = TRUE) {
+  eta.data = Eta.data(data, L)
+  data.tilde = eta.data$data.tilde
+  eigen.L = eta.data$eigen.L
+  lambda = eta.data$lambda
+  n = nrow(data.tilde)
+  d = ncol(data.tilde)
+
+  Gamma0 = t(data.tilde[2:n, , drop = FALSE]) %*%
+    data.tilde[2:n, , drop = FALSE] / (n - 1)
+  Gamma1 = t(data.tilde[2:n, , drop = FALSE]) %*%
+    data.tilde[1:(n - 1), , drop = FALSE] / (n - 1)
+  Gamma1 = (Gamma1 + t(Gamma1)) / 2
+
+  Phi = Phi.L(lambda, q)
+  weights = (theta0 + lambda)^2
+  dvec = Weighted.d(Phi, weights, diag(Gamma1))
+  Dmat = Weighted.D(Phi, weights, diag(Gamma0))
+
+  Amat = matrix(0, nrow = q + 1, ncol = 2 * d)
+  Amat[, 1:d] = t(Phi)
+  Amat[, (d + 1):(2 * d)] = -t(Phi)
+  bvec = rep(-1 + eps, 2 * d)
+
+  result = try(quadprog::solve.QP(Dmat = Dmat, dvec = dvec, Amat = Amat,
+                                  bvec = bvec), silent = TRUE)
+  if (inherits(result, "try-error")) {
+    return(NULL)
+  }
+
+  eta = if (stationary) result$solution else result$unconstrained.solution
+  R1 = Filter.from.eta(eta, eigen.L, q)
+
+  list(result = result, eta = eta, R_list = list(R1 = R1), R1 = R1)
+}
+
+QP.TAR.eta.p2 <- function(data, L, theta0, q = 1, eps = 1e-6,
+                          stationary = TRUE) {
+  eta.data = Eta.data(data, L)
+  data.tilde = eta.data$data.tilde
+  eigen.L = eta.data$eigen.L
+  lambda = eta.data$lambda
+  n = nrow(data.tilde)
+  d = ncol(data.tilde)
+
+  y0 = data.tilde[3:n, , drop = FALSE]
+  y1 = data.tilde[2:(n - 1), , drop = FALSE]
+  y2 = data.tilde[1:(n - 2), , drop = FALSE]
+  denom = n - 2
+
+  Gamma0.1 = t(y1) %*% y1 / denom
+  Gamma0.2 = t(y2) %*% y2 / denom
+  Gamma1.01 = t(y0) %*% y1 / denom
+  Gamma1.01 = (Gamma1.01 + t(Gamma1.01)) / 2
+  Gamma1.12 = t(y1) %*% y2 / denom
+  Gamma1.12 = (Gamma1.12 + t(Gamma1.12)) / 2
+  Gamma2 = t(y0) %*% y2 / denom
+  Gamma2 = (Gamma2 + t(Gamma2)) / 2
+
+  Phi = Phi.L(lambda, q)
+  weights = (theta0 + lambda)^2
+  D11 = Weighted.D(Phi, weights, diag(Gamma0.1))
+  D12 = Weighted.D(Phi, weights, diag(Gamma1.12))
+  D22 = Weighted.D(Phi, weights, diag(Gamma0.2))
+  Dmat = rbind(cbind(D11, D12), cbind(t(D12), D22))
+  dvec = c(Weighted.d(Phi, weights, diag(Gamma1.01)),
+           Weighted.d(Phi, weights, diag(Gamma2)))
+
+  bsz = q + 1
+  cons.block = t(Phi)
+  Amat = matrix(0, nrow = 2 * bsz, ncol = 4 * d)
+  Amat[1:bsz, 1:d] = -cons.block
+  Amat[(bsz + 1):(2 * bsz), 1:d] = -cons.block
+  Amat[1:bsz, (d + 1):(2 * d)] = cons.block
+  Amat[(bsz + 1):(2 * bsz), (d + 1):(2 * d)] = -cons.block
+  Amat[(bsz + 1):(2 * bsz), (2 * d + 1):(3 * d)] = -cons.block
+  Amat[(bsz + 1):(2 * bsz), (3 * d + 1):(4 * d)] = cons.block
+  bvec = rep(-1 + eps, 4 * d)
+
+  result = try(quadprog::solve.QP(Dmat = Dmat, dvec = dvec, Amat = Amat,
+                                  bvec = bvec), silent = TRUE)
+  if (inherits(result, "try-error")) {
+    return(NULL)
+  }
+
+  eta = if (stationary) result$solution else result$unconstrained.solution
+  eta1 = eta[1:bsz]
+  eta2 = eta[(bsz + 1):(2 * bsz)]
+  R1 = Filter.from.eta(eta1, eigen.L, q)
+  R2 = Filter.from.eta(eta2, eigen.L, q)
+
+  companion = rbind(cbind(R1, R2), cbind(diag(1, d), matrix(0, d, d)))
+  if (!all(abs(eigen(companion, only.values = TRUE)$values) < 1)) {
+    message("Not stationary!")
+  }
+
+  list(result = result, eta = eta, R_list = list(R1 = R1, R2 = R2),
+       R1 = R1, R2 = R2)
+}
+
+D.maker.loss <- function(data, lambda, theta0, q = 1) {
+  n = nrow(data)
+
+  Gamma.01 = t(data[3:(n - 1), , drop = FALSE]) %*%
+    data[4:n, , drop = FALSE] / (n - 3)
+  Gamma.01 = (Gamma.01 + t(Gamma.01)) / 2
+  Gamma.02 = t(data[2:(n - 2), , drop = FALSE]) %*%
+    data[4:n, , drop = FALSE] / (n - 3)
+  Gamma.02 = (Gamma.02 + t(Gamma.02)) / 2
+  Gamma.03 = t(data[1:(n - 3), , drop = FALSE]) %*%
+    data[4:n, , drop = FALSE] / (n - 3)
+  Gamma.03 = (Gamma.03 + t(Gamma.03)) / 2
+
+  D.list = vector(mode = "list", length = 3)
+  for (i in 1:3) {
+    D.list[[i]] = vector(mode = "list", length = 3)
+    for (j in i:3) {
+      D.list[[i]][[j]] =
+        t(data[(4 - i):(n - i), , drop = FALSE]) %*%
+        data[(4 - j):(n - j), , drop = FALSE] / (n - 3)
+      if (i != j) {
+        D.list[[i]][[j]] = (D.list[[i]][[j]] + t(D.list[[i]][[j]])) / 2
+      }
+    }
+  }
+
+  d.1 = rep(0, q + 1)
+  d.2 = rep(0, q + 1)
+  d.3 = rep(0, q + 1)
+
+  D11 = matrix(0, nrow = q + 1, ncol = q + 1)
+  D12 = D11
+  D13 = D11
+  D22 = D11
+  D23 = D11
+  D33 = D11
+
+  for (j in 1:(q + 1)) {
+    d.1[j] = 2 * sum(lambda^((j - 1)) * (theta0 + lambda)^2 *
+                       diag(Gamma.01))
+    d.2[j] = 2 * sum(lambda^((j - 1)) * (theta0 + lambda)^2 *
+                       diag(Gamma.02))
+    d.3[j] = 2 * sum(lambda^((j - 1)) * (theta0 + lambda)^2 *
+                       diag(Gamma.03))
+    for (k in 1:(q + 1)) {
+      D11[j, k] = 2 * sum(lambda^((j - 1) + (k - 1)) *
+                            (theta0 + lambda)^2 *
+                            diag(D.list[[1]][[1]]))
+      D12[j, k] = 2 * sum(lambda^((j - 1) + (k - 1)) *
+                            (theta0 + lambda)^2 *
+                            diag(D.list[[1]][[2]]))
+      D13[j, k] = 2 * sum(lambda^((j - 1) + (k - 1)) *
+                            (theta0 + lambda)^2 *
+                            diag(D.list[[1]][[3]]))
+      D22[j, k] = 2 * sum(lambda^((j - 1) + (k - 1)) *
+                            (theta0 + lambda)^2 *
+                            diag(D.list[[2]][[2]]))
+      D23[j, k] = 2 * sum(lambda^((j - 1) + (k - 1)) *
+                            (theta0 + lambda)^2 *
+                            diag(D.list[[2]][[3]]))
+      D33[j, k] = 2 * sum(lambda^((j - 1) + (k - 1)) *
+                            (theta0 + lambda)^2 *
+                            diag(D.list[[3]][[3]]))
+    }
+  }
+
+  dvec = c(d.1, d.2, d.3)
+  Dmat = rbind(cbind(D11, D12, D13),
+               cbind(t(D12), D22, D23),
+               cbind(t(D13), t(D23), D33))
+
+  list(D = Dmat, d = dvec)
+}
+
+Pj <- function(lambda.val, eta.j) {
+  q = length(eta.j) - 1
+  sum(eta.j * lambda.val^(0:q))
+}
+
+constraint_fn <- function(eta, lambda_vals, q) {
+  eta1 = eta[1:(q + 1)]
+  eta2 = eta[(q + 2):(2 * q + 2)]
+  eta3 = eta[(2 * q + 3):(3 * q + 3)]
+  constraints = numeric()
+
+  for (lam in lambda_vals) {
+    P1 = Pj(lam, eta1)
+    P2 = Pj(lam, eta2)
+    P3 = Pj(lam, eta3)
+
+    c1 = P1 + P2 + P3 - 1
+    c2 = -P1 + P2 - P3 - 1
+    c3 = -P3 * (P1 - P3) - P2 - 1
+    c4 = P3 - 1
+    c5 = -P3 - 1
+
+    constraints = c(constraints, c1, c2, c3, c4, c5)
+  }
+
+  constraints
+}
+
+jacobian_fn <- function(eta, lambda_vals, q) {
+  n_eta = length(eta)
+  eta1.idx = 1:(q + 1)
+  eta2.idx = (q + 2):(2 * q + 2)
+  eta3.idx = (2 * q + 3):(3 * q + 3)
+  J = matrix(0, nrow = 5 * length(lambda_vals), ncol = n_eta)
+
+  for (i in seq_along(lambda_vals)) {
+    lam = lambda_vals[i]
+    powers = lam^(0:q)
+    row.start = 5 * (i - 1)
+
+    dP1 = numeric(n_eta)
+    dP2 = numeric(n_eta)
+    dP3 = numeric(n_eta)
+    dP1[eta1.idx] = powers
+    dP2[eta2.idx] = powers
+    dP3[eta3.idx] = powers
+
+    P1.val = sum(eta[eta1.idx] * powers)
+    P3.val = sum(eta[eta3.idx] * powers)
+
+    J[row.start + 1, ] = dP1 + dP2 + dP3
+    J[row.start + 2, ] = -dP1 + dP2 - dP3
+    J[row.start + 3, ] = -P3.val * dP1 - dP2 - P1.val * dP3 +
+      2 * P3.val * dP3
+    J[row.start + 4, ] = dP3
+    J[row.start + 5, ] = -dP3
+  }
+
+  J
+}
+
+loss.eta <- function(D, d, eta) {
+  as.numeric((1 / 2) * t(eta) %*% D %*% eta - d %*% eta)
+}
+
+eta.nlr.mod <- function(data, L, theta0, p, q, eps_thre = 1e-6,
+                        max.iter = 1000, stationary = TRUE) {
+  if (p != 3) {
+    stop("NLP is only implemented for AR order p=3")
+  }
+  if (stationary && !requireNamespace("nloptr", quietly = TRUE)) {
+    stop("Package `nloptr` is required to fit stationary TAR-GAR models with p = 3.")
+  }
+
+  eta.data = Eta.data(data, L)
+  data.tilde = eta.data$data.tilde
+  eigen.L = eta.data$eigen.L
+  lambda = eta.data$lambda
+
+  obj.loss = D.maker.loss(data = data.tilde, lambda = lambda,
+                          theta0 = theta0, q = q)
+  D.loss = obj.loss$D
+  d.loss = obj.loss$d
+
+  if (stationary) {
+    eval_f <- function(eta) {
+      list(objective = loss.eta(D.loss, d.loss, eta),
+           gradient = as.numeric(D.loss %*% eta - d.loss))
+    }
+    eval_g_ineq <- function(eta) {
+      list(constraints = constraint_fn(eta, lambda, q),
+           jacobian = jacobian_fn(eta, lambda, q))
+    }
+
+    result = nloptr::nloptr(
+      x0 = rep(0, p * (q + 1)),
+      eval_f = eval_f,
+      eval_g_ineq = eval_g_ineq,
+      opts = list(algorithm = "NLOPT_LD_MMA",
+                  xtol_rel = 1e-6,
+                  maxeval = max.iter)
+    )
+    eta = result$solution
+    loss = result$objective
+    conv = result$status
+  } else {
+    eta = try(solve(D.loss, d.loss), silent = TRUE)
+    if (inherits(eta, "try-error")) {
+      return(NULL)
+    }
+    eta = as.numeric(eta)
+    loss = loss.eta(D.loss, d.loss, eta)
+    conv = TRUE
+    result = NULL
+  }
+
+  bsz = q + 1
+  R1 = Filter.from.eta(eta[1:bsz], eigen.L, q)
+  R2 = Filter.from.eta(eta[(bsz + 1):(2 * bsz)], eigen.L, q)
+  R3 = Filter.from.eta(eta[(2 * bsz + 1):(3 * bsz)], eigen.L, q)
+
+  list(result = result, eta = eta,
+       R_list = list(R1 = R1, R2 = R2, R3 = R3),
+       R1 = R1, R2 = R2, R3 = R3, loss = loss, conv = conv)
+}
+
+fit.eta <- function(data, L, theta0, p, q, eps_thre = 1e-6,
+                    stationary = TRUE, max.iter = 1000) {
+  if (p == 1) {
+    QP.TAR.eta.p1(data = data, L = L, theta0 = theta0, q = q,
+                  eps = eps_thre, stationary = stationary)
+  } else if (p == 2) {
+    QP.TAR.eta.p2(data = data, L = L, theta0 = theta0, q = q,
+                  eps = eps_thre, stationary = stationary)
+  } else if (p == 3) {
+    eta.nlr.mod(data = data, L = L, theta0 = theta0, p = p, q = q,
+                eps_thre = eps_thre, max.iter = max.iter,
+                stationary = stationary)
+  } else {
+    stop("p must be the AR order 1, 2, or 3")
+  }
+}
+
+step.00 <- function(data, p, eps_thre = 1e-6) {
+  R.initial(data = data, p = p, eps.thre = eps_thre)
+}
+
+step.0 <- function(data, R_list, p) {
+  S.theta0(data = data, R_list = R_list, p = p)
+}
+
+step.2 <- function(data, L, theta0, p, q, eps_thre, stationary = TRUE,
+                   eta_max_iter = 1000) {
+  fit.eta(data = data, L = L, theta0 = theta0, p = p, q = q,
+          eps_thre = eps_thre, stationary = stationary,
+          max.iter = eta_max_iter)
+}
+
+add.R.fields <- function(x, R_list, suffix = "") {
+  for (k in seq_along(R_list)) {
+    x[[paste0("R", k, suffix)]] = R_list[[k]]
+  }
+  x
+}
+
+step.thre <- function(resList, lambda.v, net.thre) {
   A.net.e = vector(mode = "list", length = length(lambda.v))
-  
-  for (j in 1:length(lambda.v)){
-    
+
+  for (j in seq_along(lambda.v)) {
     A.net.e[[j]] = vector(mode = "list", length = length(net.thre))
-    
-    L.lambda = resList[[j]]$L * resList[[j]]$theta1 ### L = Lhat * theta1hat
-    
-    for (k in 1:length(net.thre)){
+    L.lambda = resList[[j]]$L * resList[[j]]$theta1
+
+    for (k in seq_along(net.thre)) {
       temp = abs(L.lambda) > net.thre[k]
       diag(temp) = 0
       A.net.e[[j]][[k]] = temp
     }
-    
-    
   }
-  return(A.net.e)
-  
+
+  A.net.e
 }
 
-#' Refitting Step of TAR-GAR Procedure
-#'
-#' @description
-#' Given 0 pattern from net.thre, give an option to re-estimate L using GAR-strategy.  Takes in 0 pattern and results from the TAR-GAR passes, returns 3-step estimation procedure
-#' 
-#' @param data An n-by-p matrix
-#' @param resList A list
-#' @param A.net.e A p-by-p matrix
-#' @param lambda.v A vector of positive numbers
-#' @param net.thre A vector of (small) positive numbers
-#' @param refit A positive integer
-#' @param model A character
-#' @param eps_thre A small positive number
-#' @param eps_abs A small positive number
-#' @param eps_rel A small positive number
-#' @param max_iter A large integer
-#' @param verbose A boolean
-#' @param timevec A vector
-step.lap.est = function(data, resList, A.net.e, lambda.v, net.thre, refit = 2, model = "LN", eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, verbose = FALSE, time.vec){
+step.lap.est <- function(data, resList, p, q, A.net.e, lambda.v, net.thre,
+                         time.vec, model = "LN", eps_thre = 1e-6,
+                         eps_abs = 1e-5, eps_rel = 1e-3,
+                         max_iter = 50000, deg_max_iter = 50000,
+                         lap_z_max_iter = max_iter,
+                         eta_max_iter = 1000, verbose = FALSE,
+                         stationary = TRUE) {
   results = vector(mode = "list", length = length(lambda.v))
-  p = ncol(data) 
-  n = nrow(data) - 1
-  ini.mat = matrix(0, p, p)
-  ini.vec = rep(0,p)
-  
-  for (j in 1:length(lambda.v)){
+  d = ncol(data)
+  n_resid = nrow(data) - p
+  ini.mat = matrix(0, d, d)
+  ini.vec = rep(0, d)
+
+  for (j in seq_along(lambda.v)) {
     results[[j]] = vector(mode = "list", length = length(net.thre))
-    resList.j = resList[[j]] # Extract final pass results for jth lambda
-    S.c = resList.j$S # Final pass S
-    theta0.c = resList.j$theta0 # Final pass theta0
-    
-    for(k in 1:length(net.thre)){
-      
-      ## time for refitting (start)
+    resList.j = resList[[j]]
+    S.c = resList.j$S
+    theta0.c = resList.j$theta0
+
+    for (k in seq_along(net.thre)) {
       time.start = proc.time()[3]
-      
-      A.c = A.net.e[[j]][[k]] # Current zero-pattern
-      
-      ## Step 2 of GAR (refit off-diagonal entries)
-      refit.2 = try(ADMM_L2_Zero(SS = S.c, theta0 = theta0.c, v = ini.vec, rho = sqrt(log(p)/n), AA = A.c, model = model, Z_ini = ini.mat, W_ini = ini.mat, eps_thre = eps_thre, 
-                                 eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter, verbose = verbose))
-      conv.2 = T
-      if(inherits(refit.2, "try-error")){
+      A.c = A.net.e[[j]][[k]]
+      rho.refit = sqrt(log(d) / n_resid)
+
+      refit.2 = try(ADMM_L2_Zero(
+        SS = S.c, theta0 = theta0.c, v = ini.vec, rho = rho.refit,
+        AA = A.c, model = model, Z_ini = ini.mat, W_ini = ini.mat,
+        eps_thre = eps_thre, eps_abs = eps_abs, eps_rel = eps_rel,
+        max_iter = max_iter, verbose = verbose
+      ), silent = TRUE)
+      conv.2 = !inherits(refit.2, "try-error")
+      if (!conv.2) {
         refit.2 = NULL
-        conv.2=FALSE
       }
-      
-      L.est = refit.2$L
+
       v0.res = NULL
+      v0.est = ini.vec
       conv.v0 = FALSE
       refit.3 = NULL
-      v0.est = ini.vec
-      
-      
-      ## Step 3.1 of GAR (get v0 estimate from previous L estimator)
-      if ((refit > 1) && (model != "L") && conv.2 ==T){
-        v0.res = try(ADMM.Deg.L(L.est, rho = 0.1, epsilon = sqrt(1/(2*ncol(L.est))), eps.abs = 1e-05, 
-                                eps.rel = 0.001, max.iter = 50000, verbose = verbose))
-        v0.est = v0.res$v
-        conv.v0 = v0.res$conv
-        
-        if(inherits(v0.res, "try-error")){
+      conv.3 = FALSE
+
+      if (conv.2 && model != "L") {
+        v0.res = try(ADMM.Deg.L(
+          refit.2$L, rho = 0.1, epsilon = sqrt(1 / (2 * d)),
+          eps.abs = 1e-5, eps.rel = 1e-3, max.iter = deg_max_iter,
+          verbose = verbose
+        ), silent = TRUE)
+
+        if (!inherits(v0.res, "try-error")) {
+          v0.est = v0.res$v
+          conv.v0 = v0.res$conv
+        } else {
           v0.res = NULL
-          v0.est = ini.vec
-          conv.v0=FALSE
         }
-        
-        
       }
-      
-      ## Step 3.2 of GAR (Put L in space of (normalized) graph Laplacians given v)
-      if (conv.v0 == TRUE && (model != "L") ){
-        
-        refit.3 = try(ADMM_Lap_Zero(SS = S.c, V0 = v0.est, rho = sqrt(log(p)/n), AA = A.c, model = model, ZZ_ini = ini.mat, WW_ini = ini.mat, phi_ini = 1e-6, eps_thre = eps_thre, 
-                                    eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter, Z_max_iter = max_iter, Z_conv_abs = 1e-5, Z_conv_rel = 1e-3, verbose = verbose))
-        conv.3 = TRUE
-        if(inherits(refit.3, "try-error")){
+
+      if (conv.v0 && model != "L") {
+        refit.3 = try(ADMM_Lap_Zero(
+          SS = S.c, V0 = v0.est, rho = rho.refit, AA = A.c,
+          model = model, ZZ_ini = ini.mat, WW_ini = ini.mat,
+          phi_ini = 1e-6, eps_thre = eps_thre,
+          eps_abs = eps_abs, eps_rel = eps_rel,
+          max_iter = max_iter, Z_max_iter = lap_z_max_iter,
+          Z_conv_abs = 1e-5, Z_conv_rel = 1e-3,
+          verbose = verbose
+        ), silent = TRUE)
+
+        if (!inherits(refit.3, "try-error")) {
+          conv.3 = TRUE
+        } else {
           refit.3 = NULL
-          conv.3=FALSE
         }
-        
-      } else{
-        refit.3 = NULL
-        conv.3 = FALSE
       }
-      
-      ## Step 2 of TAR-GAR: Refit eta0, eta1.tilde Matrix
-      if (conv.3){
-        L.est = refit.3$L * refit.3$theta1 
+
+      if (conv.3) {
+        L.unscaled = refit.3$L
+        theta1.est = refit.3$theta1
+        L.est = L.unscaled * theta1.est
         theta0.est = refit.3$theta0
-      } else{
-        warning("Step 3 of Refitting Failed.  Using Step 2 Estimate for L instead.")
-        L.est = refit.2$L * refit.2$theta1
+      } else if (conv.2) {
+        if (model != "L") {
+          warning("Step 3 of refitting failed. Using Step 2 estimate for L instead.",
+                  call. = FALSE)
+        }
+        L.unscaled = refit.2$L
+        theta1.est = refit.2$theta1
+        L.est = L.unscaled * theta1.est
+        theta0.est = theta0.c
+      } else {
+        L.unscaled = NULL
+        theta1.est = NA_real_
+        L.est = NULL
         theta0.est = theta0.c
       }
-      eta.refit = step.2(data = data, L = L.est, theta0 = theta0.est, eps = eps_thre)
-      
-      ## Step 3 of TAR-GAR: Refit R1
-      eta.0.refit = eta.refit$eta[1]
-      eta.1.refit = eta.refit$eta[2]
-      R1.refit = step.3(eta.0.refit, eta.1.refit, L.est) # L.est has already absorbed theta1
-      
-      ## time for refitting (end)
+
+      eta.refit = NULL
+      if (!is.null(L.est)) {
+        eta.refit = step.2(
+          data = data, L = L.est, theta0 = theta0.est, p = p, q = q,
+          eps_thre = eps_thre, stationary = stationary,
+          eta_max_iter = eta_max_iter
+        )
+      }
+
       time.end = proc.time()[3]
-      
-      ## time for refitting
       time.refit = time.end - time.start + time.vec[j]
-      
-      results[[j]][[k]] = list("S" = S.c, "theta0.ini" = theta0.c, "result.0.post" = refit.2, "conv.2" = conv.2, "theta0.0S" = refit.3$theta0, "result.0S" = refit.3, "v0.est" = v0.est, "conv.3" = conv.3, "A.net" = A.c, "R1.0S" = R1.refit, "eta0.0S" = eta.0.refit, "eta1.0S" = eta.1.refit, "time" = time.refit)
-      
+
+      item = list(
+        S = S.c,
+        theta0.ini = theta0.c,
+        theta0 = theta0.est,
+        theta1 = theta1.est,
+        L = L.unscaled,
+        L.scaled = L.est,
+        result.0.post = refit.2,
+        conv.2 = conv.2,
+        theta0.0S = if (conv.3) refit.3$theta0 else NA,
+        result.0S = refit.3,
+        v0.est = v0.est,
+        conv.3 = conv.3,
+        A.net = A.c,
+        R_list = if (is.null(eta.refit)) NULL else eta.refit$R_list,
+        eta = if (is.null(eta.refit)) NULL else eta.refit$eta,
+        eta.0S = if (is.null(eta.refit)) NULL else eta.refit$eta,
+        time = time.refit
+      )
+      if (!is.null(eta.refit)) {
+        item = add.R.fields(item, eta.refit$R_list, suffix = ".0S")
+      }
+      results[[j]][[k]] = item
     }
   }
-  
-  return(results)
+
+  results
 }
 
+validate_targar_fit_inputs <- function(data, p, q, lambda.v, net.thre, model,
+                                       rho.v, num.pass, eps.thre, eps_abs,
+                                       eps_rel, max_iter, deg_max_iter,
+                                       lap_z_max_iter, eta_max_iter,
+                                       stationary, verbose) {
+  if (!is.matrix(data) || !is.numeric(data) || any(!is.finite(data))) {
+    stop("`data` must be a finite numeric matrix.")
+  }
+  if (!is.numeric(p) || length(p) != 1 || !is.finite(p) ||
+      p != as.integer(p) || !p %in% 1:3) {
+    stop("`p` must be the AR order 1, 2, or 3.")
+  }
+  if (nrow(data) <= p) {
+    stop("`data` must have more rows than the AR order `p`.")
+  }
+  if (!is.numeric(q) || length(q) != 1 || !is.finite(q) ||
+      q != as.integer(q) || q < 1) {
+    stop("`q` must be a positive integer.")
+  }
+  if (!is.numeric(lambda.v) || length(lambda.v) == 0 ||
+      any(!is.finite(lambda.v)) || any(lambda.v <= 0)) {
+    stop("`lambda.v` must be a non-empty numeric vector of positive values.")
+  }
+  if (!is.numeric(rho.v) || length(rho.v) != length(lambda.v) ||
+      any(!is.finite(rho.v)) || any(rho.v <= 0)) {
+    stop("`rho.v` must be a positive numeric vector with the same length as `lambda.v`.")
+  }
+  if (!is.numeric(net.thre) || length(net.thre) == 0 ||
+      any(!is.finite(net.thre)) || any(net.thre < 0)) {
+    stop("`net.thre` must be a non-empty numeric vector of non-negative values.")
+  }
+  if (!is.numeric(num.pass) || length(num.pass) != 1 ||
+      !is.finite(num.pass) || num.pass <= 0 ||
+      num.pass != as.integer(num.pass)) {
+    stop("`num.pass` must be a positive integer scalar.")
+  }
+  if (any(!is.finite(c(eps.thre, eps_abs, eps_rel))) ||
+      eps.thre <= 0 || eps_abs <= 0 || eps_rel <= 0) {
+    stop("`eps.thre`, `eps_abs`, and `eps_rel` must be positive finite scalars.")
+  }
+  iter.values = c(max_iter, deg_max_iter, lap_z_max_iter, eta_max_iter)
+  if (any(!is.finite(iter.values)) || any(iter.values <= 0) ||
+      any(iter.values != as.integer(iter.values))) {
+    stop("Iteration limits must be positive integer scalars.")
+  }
+  if (!is.logical(stationary) || length(stationary) != 1 || is.na(stationary)) {
+    stop("`stationary` must be TRUE or FALSE.")
+  }
+  if (!is.logical(verbose) || length(verbose) != 1 || is.na(verbose)) {
+    stop("`verbose` must be TRUE or FALSE.")
+  }
 
+  invisible(model)
+}
 
-#' TAR-GAR Fitting Procedure
-#' 
-#' @include RcppExports.R
-#' 
-#' @description
-#' Using the TAR-GAR fitting procedure, infers the (normalized) graph Laplacian matrix of a latent graph from temporally dependent data.  Fits to a sequence of tuning parameters (`lambda.v`, `net.thre`).  
-#' 
-#' @param data An n-by-p matrix
-#' @param lambda.v A vector of positive numbers.  These values are tuning parameters for the TAR-GAR procedure.
-#' @param net.thre A vector of positive numbers.  These values are tuning parameters for the TAR-GAR procedure. 
-#' @param rho.v A vector of positive numbers.  The step size for the ADMM algorithm.  Set to `lambda.v` by default.
-#' @param num.pass A positive integer.  Indicates how many passes to run before refitting. Three passes is recommended.
-#' @param model A character.  Either `"LN"`, `"LN.noselfloop"`, or `"L"`.  Corresponds to GAR structure of the TAR-GAR innovation term.
-#' @param eps.thre A small positive number.
-#' @param eps_abs A small positive number.  Refers to ADMM stopping criteria. By default, set to 1e-5.
-#' @param eps_rel A small positive number.  Refers to ADMM stopping criteria.  By default, set to 1e-3.
-#' @param max_iter A large positive integer.  Refers to ADMM stopping criteria.  By default, set to 50000.
-#' @param refit An integer.  Indicated number of steps in the GAR fitting procedure to use in the refitting step of the TAR-GAR procedure.  By default, set to 2 (indicates to use full GAR fitting procedure).
-#' @param verbose A boolean.  Setting to TRUE prints out trace of the fitting procedure.
-#' 
-#' @returns A list containing:
-#' * `result.pass`: A list corresponding to the fitting results, pre-refitting.  Length is equivalent to `length(lambda.v)`.
-#' * `ini`: A list corresponding to the initial fitting results and first pass.  Length is equivalent to `length(lambda.v)`.
-#' * `refit`: A list corresponding to the final estimates using the TAR-GAR procedure.  Contains a collection of lists, with inner index corresponding to `lambda index`, and outer index corresponding to `net.thre` index.
-#' * `A.net`: A list of matrices containing the zero-pattern of the estimated network.   Contains a collection of matrices, with inner index corresponding to `lambda index`, and outer index corresponding to `net.thre` index.
-#' * `time.total`: Total time to run the TAR-GAR procedure on the specified sequence of tuning parameters.   
-#' 
-#' @example man-roxygen/TARGAR_fit_example.R
-#' @export
-TARGAR_fit = function(data, lambda.v, net.thre, rho.v=lambda.v, num.pass = 2,  model = "LN", eps.thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, refit=2, verbose = F){
-  
-  ## Start Time
+TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
+                        rho.v = lambda.v, num.pass = 2, model = "LN",
+                        eps.thre = 1e-6, eps_abs = 1e-5,
+                        eps_rel = 1e-3, max_iter = 50000,
+                        deg_max_iter = 50000,
+                        lap_z_max_iter = max_iter,
+                        eta_max_iter = 1000,
+                        stationary = TRUE, verbose = FALSE,
+                        max.iter.eta = NULL) {
+  if (!is.null(max.iter.eta)) {
+    eta_max_iter = max.iter.eta
+  }
+
+  data = as.matrix(data)
+  model.input = model
+  model.internal = normalize_gar_model(model)
+  validate_targar_fit_inputs(
+    data = data, p = p, q = q, lambda.v = lambda.v, net.thre = net.thre,
+    model = model.internal, rho.v = rho.v, num.pass = num.pass,
+    eps.thre = eps.thre, eps_abs = eps_abs, eps_rel = eps_rel,
+    max_iter = max_iter, deg_max_iter = deg_max_iter,
+    lap_z_max_iter = lap_z_max_iter, eta_max_iter = eta_max_iter,
+    stationary = stationary, verbose = verbose
+  )
+
+  p = as.integer(p)
+  q = as.integer(q)
+  num.pass = as.integer(num.pass)
+  max_iter = as.integer(max_iter)
+  deg_max_iter = as.integer(deg_max_iter)
+  lap_z_max_iter = as.integer(lap_z_max_iter)
+  eta_max_iter = as.integer(eta_max_iter)
+
+  eps_thre = eps.thre
   time.tot.beg = proc.time()[3]
-  
-  ## Storage objects
   resList = vector(length = length(lambda.v), mode = "list")
   iniRes = resList
-  time.vec = vector(length = length(lambda.v))
-  
-  ## Sample size
-  n = nrow(data)
-  
-  ## Step 00
-  R1.fit = step.00(data, eps.thre)
-  R1.ini = R1.fit
-  print("Step 00 Complete")
-  
-  for (j in 1:length(lambda.v)){
-    print(paste("Starting fitting for lambda =", lambda.v[j]))
+  time.vec = numeric(length(lambda.v))
+  d = ncol(data)
+
+  R.list = step.00(data = data, p = p, eps_thre = eps_thre)
+  R.ini = R.list
+  if (verbose) {
+    message("Step 00 complete")
+  }
+
+  for (j in seq_along(lambda.v)) {
+    if (verbose) {
+      message(paste("Starting fitting for lambda =", lambda.v[j]))
+    }
     time.start = proc.time()[3]
-    
-    for (i in 1:num.pass){
-      
-      
-      ## Step 0
-      fit.S.theta0 = step.0(data, R1.fit)
+    eta = NULL
+    fit.L.theta1 = NULL
+    S.i = NULL
+    theta0.i = NULL
+    conv.step.1.i = FALSE
+
+    for (i in 1:num.pass) {
+      fit.S.theta0 = step.0(data = data, R_list = R.list, p = p)
       S.i = fit.S.theta0$S
       theta0.i = fit.S.theta0$theta0
-      print("step 0 complete")
-      
-      ## Step 1
-      p = nrow(S.i)
-      
-      ## v0 for model; not necessary, since ADMM_L2 automatically will change v0 depending on model
-      
-      if(model == "L"){
-        v0 = rep(1, p)
-      } else{
-        v0 = rep(0,p)
+      if (verbose) {
+        message("step 0 complete")
       }
-      fit.L.theta1 = try(ADMM_L2(s = S.i, theta0 = theta0.i, v = v0, rho = rho.v[j], lambda =lambda.v[j],
-                                 model = model, Z_ini = matrix(0,p,p), W_ini = matrix(0,p,p), eps_thre = eps.thre,
-                                 eps_abs = 1e-5, eps_rel = 1e-3, max_iter = 50000, verbose = F))
-      if(inherits(fit.L.theta1, "try-error")){
-        fit.L.theta1 = NULL
-        conv=FALSE
+
+      v0 = if (model.internal == "L") rep(1, d) else rep(0, d)
+      fit.L.theta1 = try(ADMM_L2(
+        s = S.i, theta0 = theta0.i, v = v0, rho = rho.v[j],
+        lambda = lambda.v[j], model = model.internal,
+        Z_ini = matrix(0, d, d), W_ini = matrix(0, d, d),
+        eps_thre = eps_thre, eps_abs = eps_abs, eps_rel = eps_rel,
+        max_iter = max_iter, verbose = verbose
+      ), silent = TRUE)
+      if (inherits(fit.L.theta1, "try-error")) {
+        stop(sprintf("ADMM_L2 failed at lambda index %d, pass %d", j, i))
       }
-      L.i = fit.L.theta1$L*fit.L.theta1$theta1
+      L.i = fit.L.theta1$L * fit.L.theta1$theta1
       conv.step.1.i = fit.L.theta1$conv
-      print("step 1 complete")
-      
-      
-      ## Step 2
-      #if (i == 1){ ## To match with Dr. Peng's code.  Better results for R1 if we remove the if statement. 
-      fit.eta = step.2(data, L = L.i, theta0 = theta0.i, eps = eps.thre)
-      print("step 2 complete")
-      
-      ## Step 3
-      eta.0 = fit.eta$eta[1]
-      eta.1 = fit.eta$eta[2]
-      R1.fit = step.3(eta.0, eta.1, L.i)
-      
-      print("step 3 complete")
-      #}
-      
-      
-      ## For eval purposes, store 1-pass estimates 
-      if (i == 1){
-        iniRes[[j]] = list("R1.ini" = R1.ini, "L.ini" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1, "eta.ini" = c(eta.0,eta.1), "S.ini" = S.i, "theta0.ini" = theta0.i, "conv.step1" = conv.step.1.i)
+      if (verbose) {
+        message("step 1 complete")
       }
-      
+
+      fit.eta = step.2(
+        data = data, L = L.i, theta0 = theta0.i, p = p, q = q,
+        eps_thre = eps_thre, stationary = stationary,
+        eta_max_iter = eta_max_iter
+      )
+      if (is.null(fit.eta)) {
+        stop(sprintf("Eta fit failed at lambda index %d, pass %d", j, i))
+      }
+      eta = fit.eta$eta
+      R.list = fit.eta$R_list
+      if (verbose) {
+        message("step 2/3 complete")
+      }
+
+      if (i == 1) {
+        ini.item = list(
+          R_ini = R.ini,
+          L.ini = fit.L.theta1$L,
+          theta1 = fit.L.theta1$theta1,
+          eta.ini = eta,
+          S.ini = S.i,
+          theta0.ini = theta0.i,
+          conv.step1 = conv.step.1.i
+        )
+        ini.item = add.R.fields(ini.item, R.ini, suffix = ".ini")
+        iniRes[[j]] = ini.item
+      }
     }
+
     time.end = proc.time()[3]
     time.vec[j] = time.end - time.start
-    
-    resList[[j]] = list("S" = S.i, "theta0" = theta0.i, "L" = fit.L.theta1$L, "theta1" = fit.L.theta1$theta1,
-                        "eta" = c(eta.0, eta.1), "R1" = R1.fit, "conv.step1" = conv.step.1.i)
-    print(paste("Pass", i, "complete"))
-    R1.fit = R1.ini # Reset for other lambda
-    
+
+    res.item = list(
+      S = S.i,
+      theta0 = theta0.i,
+      L = fit.L.theta1$L,
+      theta1 = fit.L.theta1$theta1,
+      eta = eta,
+      R_list = R.list,
+      conv.step1 = conv.step.1.i
+    )
+    res.item = add.R.fields(res.item, R.list)
+    resList[[j]] = res.item
+    if (verbose) {
+      message(paste("Pass", i, "complete"))
+    }
+    R.list = R.ini
   }
-  
-  if(refit != 0){
-    print("Starting refitting for L")
-    
-    ## Extract zero-patterns for refitting
-    refit.zero = step.thre(resList, lambda.v, net.thre)
-    
-    ## Refit L estimates
-    refit.L = step.lap.est(data, resList, refit.zero, lambda.v, net.thre, refit, model, eps.thre, eps_abs, eps_rel, max_iter, verbose, time.vec) # n-1 because that is sample size for innovations
+
+  if (verbose) {
+    message("Starting refitting")
   }
-  
-  ## End Time
+  refit.zero = step.thre(resList, lambda.v, net.thre)
+  refit.L = step.lap.est(
+    data = data, resList = resList, p = p, q = q,
+    A.net.e = refit.zero, lambda.v = lambda.v, net.thre = net.thre,
+    time.vec = time.vec, model = model.internal, eps_thre = eps_thre,
+    eps_abs = eps_abs, eps_rel = eps_rel, max_iter = max_iter,
+    deg_max_iter = deg_max_iter, lap_z_max_iter = lap_z_max_iter,
+    eta_max_iter = eta_max_iter, verbose = verbose,
+    stationary = stationary
+  )
+
   time.tot.end = proc.time()[3]
   time.total = time.tot.end - time.tot.beg
-  
-  
-  return(list("result.pass" = resList, "ini" = iniRes, "refit" = refit.L, "A.net" = refit.zero, "time.total" = time.total))
-  
+
+  result = list(result.pass = resList, ini = iniRes, refit = refit.L,
+                A.net = refit.zero, time.total = time.total,
+                nobs = nrow(data), n.resid = nrow(data) - p,
+                p = p, q = q, lambda.v = lambda.v, rho.v = rho.v,
+                net.thre = net.thre, model = model.input,
+                model.internal = model.internal, fit.type = "TARGAR",
+                stationary = stationary)
+  class(result) = c("TARGAR_fit", "list")
+  result
+}
+
+#' TAR-GAR fitting procedure
+#'
+#' @description
+#' `TARGAR_fit()` fits a TAR-GAR(p,q) model to temporally dependent
+#' multivariate data. It alternates between estimating AR filter matrices
+#' `R1`, ..., `Rp` and estimating the latent graph Laplacian for the
+#' innovation process, then refits the graph over the supplied `net.thre`
+#' sequence.
+#'
+#' @param data An n by d numeric data matrix, with rows ordered in time.
+#' @param lambda.v Positive tuning parameter sequence controlling graph
+#'   sparsity.
+#' @param net.thre Non-negative threshold sequence used to define graph
+#'   zero-patterns for the final refit.
+#' @param rho.v Positive ADMM parameter sequence. Defaults to `lambda.v`.
+#' @param num.pass Positive integer number of alternating TAR-GAR passes before
+#'   the final refit. Defaults to 2.
+#' @param model One of `"LN"`, `"L"`, or `"LN.noselfloop"`, matching the GAR
+#'   structure used for the innovation covariance.
+#' @param p AR order. Must be 1, 2, or 3. Defaults to 1 for compatibility with
+#'   the original package API.
+#' @param q Polynomial order in the graph Laplacian. Must be a positive
+#'   integer. Defaults to 1.
+#' @param eps.thre Small positive numerical threshold. Defaults to 1e-6.
+#' @param eps_abs Absolute ADMM convergence tolerance. Defaults to 1e-5.
+#' @param eps_rel Relative ADMM convergence tolerance. Defaults to 1e-3.
+#' @param max_iter Maximum number of ADMM iterations. Defaults to 50000.
+#' @param deg_max_iter Maximum number of iterations for the degree-vector ADMM
+#'   refit. Defaults to 50000.
+#' @param lap_z_max_iter Maximum number of inner Z updates in the Laplacian
+#'   refit. Defaults to `max_iter`.
+#' @param eta_max_iter Maximum number of eta optimization iterations for the
+#'   p = 3 nonlinear program. Defaults to 1000.
+#' @param stationary Logical flag indicating whether to impose stationarity
+#'   constraints while fitting the TAR filters. Defaults to TRUE.
+#' @param verbose Logical flag indicating whether to print progress.
+#' @param max.iter.eta Backward-compatible alias for `eta_max_iter`.
+#'
+#' @returns A list with class `"TARGAR_fit"` containing:
+#' * `result.pass`: pre-refit results indexed by `lambda.v`.
+#' * `ini`: first-pass initial estimates indexed by `lambda.v`.
+#' * `refit`: final refit results indexed by `lambda.v` and `net.thre`.
+#' * `A.net`: thresholded graph zero-patterns indexed by `lambda.v` and
+#'   `net.thre`.
+#' * `p`, `q`, `lambda.v`, `rho.v`, `net.thre`, `model`, and timing metadata.
+#'
+#' `model_selec()` can be used on the returned object to select a final model
+#' with the same workflow used for `GAR1_fit()`.
+#'
+#' @examples
+#' \dontrun{
+#' library(SGM)
+#' data("targar")
+#'
+#' y = targar$data
+#' n = nrow(y)
+#' d = ncol(y)
+#'
+#' lambda.v = c(1, 0.5) * sqrt(log(d) / (n - 1))
+#' rho.v = pmax(lambda.v, 0.01)
+#' net.thre = exp(seq(log(1), log(0.1), length.out = 5)) *
+#'   sqrt(log(d) / (n - 1))
+#'
+#' fit = TARGAR_fit(
+#'   y, lambda.v = lambda.v, net.thre = net.thre, rho.v = rho.v,
+#'   p = 1, q = 1, num.pass = 2, model = "LN"
+#' )
+#' sel = model_selec(fit)
+#'
+#' sel$theta0
+#' sel$theta1
+#' sel$L
+#' sel$R_list
+#' }
+#'
+#' @export
+TARGAR_fit <- function(data, lambda.v, net.thre, rho.v = lambda.v,
+                       num.pass = 2, model = "LN", p = 1, q = 1,
+                       eps.thre = 1e-6, eps_abs = 1e-5,
+                       eps_rel = 1e-3, max_iter = 50000,
+                       deg_max_iter = 50000,
+                       lap_z_max_iter = max_iter,
+                       eta_max_iter = 1000, stationary = TRUE,
+                       verbose = FALSE, max.iter.eta = NULL) {
+  TAR.GAR.fit(
+    data = data, p = p, q = q, lambda.v = lambda.v, net.thre = net.thre,
+    rho.v = rho.v, num.pass = num.pass, model = model,
+    eps.thre = eps.thre, eps_abs = eps_abs, eps_rel = eps_rel,
+    max_iter = max_iter, deg_max_iter = deg_max_iter,
+    lap_z_max_iter = lap_z_max_iter, eta_max_iter = eta_max_iter,
+    stationary = stationary, verbose = verbose,
+    max.iter.eta = max.iter.eta
+  )
+}
+
+#' @rdname TARGAR_fit
+#' @export
+fit_TAR_GAR <- function(data, p, q, lambda.v, net.thre, rho.v = lambda.v,
+                        num.pass = 2, model = "LN", eps.thre = 1e-6,
+                        eps_abs = 1e-5, eps_rel = 1e-3,
+                        max_iter = 50000, deg_max_iter = 50000,
+                        lap_z_max_iter = max_iter,
+                        eta_max_iter = 1000, stationary = TRUE,
+                        verbose = FALSE, max.iter.eta = NULL) {
+  TARGAR_fit(
+    data = data, lambda.v = lambda.v, net.thre = net.thre, rho.v = rho.v,
+    num.pass = num.pass, model = model, p = p, q = q,
+    eps.thre = eps.thre, eps_abs = eps_abs, eps_rel = eps_rel,
+    max_iter = max_iter, deg_max_iter = deg_max_iter,
+    lap_z_max_iter = lap_z_max_iter, eta_max_iter = eta_max_iter,
+    stationary = stationary, verbose = verbose,
+    max.iter.eta = max.iter.eta
+  )
 }
