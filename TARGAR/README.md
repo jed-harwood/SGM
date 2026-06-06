@@ -10,8 +10,9 @@ auxiliary script folder.
 | File or folder | Description |
 |---|---|
 | `simulations_TARGAR.R` | Main simulation script. It sets the TAR-GAR order/configuration, generates data, fits TAR-GAR models over tuning grids, computes 0S/eBIC metrics, prints summaries, and saves results. |
+| `simulations_TARGAR11_on_TARGAR_pq.R` | Separate simulation script for fitting TAR-GAR(p = 1, q = 1) to data generated from the TAR-GAR(p, q) models. |
 | `simulation-auxiliary-scripts/simulations_TARGAR_wrappers.R` | Helper functions for graph generation, TAR-GAR data generation, fitting replicates, computing eBIC, and extracting selected 0S/eBIC metrics. |
-| `results/` | Default output folder created by `simulations_TARGAR.R`. |
+| `results/` | Default output folder created by the simulation scripts. |
 
 ## Typical Workflow
 
@@ -34,6 +35,12 @@ The simulation script:
 3. fits TAR-GAR models over `lambda.v` and `net.thre`,
 4. computes the full BIC/eBIC paths, and
 5. records the 0S/eBIC-selected metrics.
+
+For the misspecified TAR-GAR(1,1)-on-TAR-GAR(p,q) simulations, use:
+
+```r
+source("TARGAR/simulations_TARGAR11_on_TARGAR_pq.R")
+```
 
 ## Selecting The Simulation
 
@@ -69,6 +76,27 @@ There is no burn-in. This is intentional: the modular simulations use the
 model-specific initialization directly and then fit the generated `n`
 observations.
 
+## TAR-GAR(1,1) On TAR-GAR(p,q)
+
+Use `simulations_TARGAR11_on_TARGAR_pq.R` for the simulations where the
+fitted model is fixed at TAR-GAR(p = 1, q = 1), but the data-generating model
+changes. In that script, edit:
+
+```r
+data.ar.order = 1
+```
+
+Use:
+
+| `data.ar.order` | Data-generating model | Fitted model |
+|---|---|---|
+| `1` | TAR-GAR(p = 1, q = 3), `n = 100`. | TAR-GAR(p = 1, q = 1). |
+| `2` | TAR-GAR(p = 2, q = 3), `n = 500`. | TAR-GAR(p = 1, q = 1). |
+| `3` | TAR-GAR(p = 3, q = 3), `n = 500`. | TAR-GAR(p = 1, q = 1). |
+
+These runs use the same graph, theta, eta, lambda, and threshold defaults from
+the corresponding original scripts, with no burn-in.
+
 ## Metrics
 
 The modular script focuses on the 0S/eBIC metrics from the original
@@ -88,17 +116,20 @@ simulations and stores the full eBIC path. Important outputs include:
 | `targar.results$bic.0S` | Full 0S BIC path. |
 | `targar.results$ebic.0S.selec` | Selected 0S eBIC value for each replicate. |
 
-The eBIC number of parameters is:
+The eBIC number of parameters is based on the fitted TAR-GAR model:
 
 ```r
-ar_order * (q + 1) + 1 + d + net.size
+fit_ar_order * (fit_q + 1) + 1 + d + net.size
 ```
 
-This is centralized in `targar_ebic_parameter_count()` in the wrapper file.
+For `simulations_TARGAR.R`, `fit_ar_order = ar_order` and `fit_q = q`.
+For `simulations_TARGAR11_on_TARGAR_pq.R`, `fit_ar_order = 1` and
+`fit_q = 1`. This is centralized in `targar_ebic_parameter_count()` in the
+wrapper file.
 
 ## Generated Outputs
 
-By default, `simulations_TARGAR.R` saves:
+By default, both simulation scripts save:
 
 | Output file | Description |
 |---|---|

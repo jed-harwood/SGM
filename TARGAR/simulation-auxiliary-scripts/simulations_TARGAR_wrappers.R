@@ -327,7 +327,45 @@ targar_default_config <- function(ar_order = 1) {
   }
 
   base$edge.prob = 2 / base$d
+  base$fit_ar_order = base$ar_order
+  base$fit_q = base$q
   base
+}
+
+targar_on_targar_default_config <- function(dgp_ar_order = 1) {
+  dgp_ar_order = as.integer(dgp_ar_order)
+  config = targar_default_config(dgp_ar_order)
+
+  config$fit_ar_order = 1
+  config$fit_q = 1
+  config$num.pass = 3
+  config$stationary = TRUE
+
+  if (dgp_ar_order == 1) {
+    config$n = 100
+    config$q = 3
+    config$num.thread = 25
+    config$eta_builder = function(lambda.max) {
+      c(0.1, 0.12 / lambda.max, 0.2 / lambda.max^2,
+        0.3 / lambda.max^3)
+    }
+    config$case = "TARGAR_p1q1_on_TARGAR_order1_q3"
+  } else if (dgp_ar_order == 2) {
+    config$n = 500
+    config$q = 3
+    config$num.thread = 20
+    config$case = "TARGAR_p1q1_on_TARGAR_order2_q3"
+  } else if (dgp_ar_order == 3) {
+    config$n = 500
+    config$q = 3
+    config$num.thread = 25
+    config$case = "TARGAR_p1q1_on_TARGAR_order3_q3"
+  } else {
+    stop("`dgp_ar_order` must be 1, 2, or 3.")
+  }
+
+  config$edge.prob = 2 / config$d
+  config
 }
 
 targar_threshold_constants <- function(d) {
@@ -344,10 +382,11 @@ prepare_targar_simulation <- function(config) {
   d = config$d
   n = config$n
   ar_order = config$ar_order
+  fit_ar_order = config$fit_ar_order %||% ar_order
   q = config$q
-  n_eff = n - ar_order
+  n_eff = n - fit_ar_order
   if (n_eff <= 0) {
-    stop("`n - ar_order` must be positive.")
+    stop("`n - fit_ar_order` must be positive.")
   }
 
   set.seed(config$graph_seed)
@@ -394,6 +433,8 @@ fit_targar_replicates <- function(setup, use_parallel = TRUE) {
   }
   config = setup$config
   n_rep = config$n_rep
+  fit_ar_order = config$fit_ar_order %||% config$ar_order
+  fit_q = config$fit_q %||% config$q
 
   fit_one = function(i) {
     data.i = setup$data[[i]][seq_len(config$n), , drop = FALSE]
@@ -404,8 +445,8 @@ fit_targar_replicates <- function(setup, use_parallel = TRUE) {
       rho.v = setup$rho.v,
       num.pass = config$num.pass,
       model = config$model,
-      p = config$ar_order,
-      q = config$q,
+      p = fit_ar_order,
+      q = fit_q,
       eps.thre = config$eps.thre,
       max_iter = config$max_iter,
       deg_max_iter = config$deg_max_iter,
@@ -499,6 +540,8 @@ extract_targar_metrics <- function(results, setup) {
   n_thre = length(setup$net.thre)
   ar_order = config$ar_order
   q = config$q
+  fit_ar_order = config$fit_ar_order %||% ar_order
+  fit_q = config$fit_q %||% q
   d = config$d
   n_eff = setup$n_eff
 
@@ -512,12 +555,13 @@ extract_targar_metrics <- function(results, setup) {
   power.refit = array(NA, dim = dims)
   fdr.refit = array(NA, dim = dims)
   time.refit = array(NA, dim = dims)
-  eta.refit.0S.err = array(NA, dim = c(dims, ar_order * (q + 1)))
-  R.refit.0S.err = vector("list", ar_order)
-  for (r in seq_len(ar_order)) {
+  eta.refit.0S.err = array(NA, dim = c(dims, fit_ar_order * (fit_q + 1)))
+  R.refit.0S.err = vector("list", fit_ar_order)
+  for (r in seq_len(fit_ar_order)) {
     R.refit.0S.err[[r]] = array(NA, dim = dims)
   }
-  names(R.refit.0S.err) = paste0("R", seq_len(ar_order), ".refit.0S.err")
+  names(R.refit.0S.err) =
+    paste0("R", seq_len(fit_ar_order), ".refit.0S.err")
 
   log.like.0S = array(NA, dim = dims)
   bic.0S = array(Inf, dim = dims)
@@ -553,7 +597,7 @@ extract_targar_metrics <- function(results, setup) {
             relative_sq_error(L.est * theta1.est, setup$L * config$theta1)
           v0.0S.err[i, j, k] = sum((item$v0.est - setup$v0)^2)
 
-          for (r in seq_len(ar_order)) {
+          for (r in seq_len(fit_ar_order)) {
             R.est = extract_refit_R(item, r)
             if (!is.null(R.est)) {
               R.refit.0S.err[[r]][i, j, k] =
@@ -561,15 +605,16 @@ extract_targar_metrics <- function(results, setup) {
             }
           }
           if (!is.null(item$eta)) {
-            eta.refit.0S.err[i, j, k, ] = (item$eta - setup$eta.comp)^2
+            eta.truth = setup$eta.comp[seq_len(fit_ar_order * (fit_q + 1))]
+            eta.refit.0S.err[i, j, k, ] = (item$eta - eta.truth)^2
           }
 
           log.like.0S[i, j, k] =
             targar_loglike(S = item$S, theta0 = theta0.est,
                            theta1 = theta1.est, L = L.est, n = n_eff)
           ebic.param.0S[i, j, k] =
-            targar_ebic_parameter_count(ar_order = ar_order, q = q, d = d,
-                                        net.size = net.size.c)
+            targar_ebic_parameter_count(ar_order = fit_ar_order, q = fit_q,
+                                        d = d, net.size = net.size.c)
           bic.0S[i, j, k] =
             targar_bic(log.like.0S[i, j, k], n_eff, ebic.param.0S[i, j, k])
           ebic.0S[i, j, k] = bic.0S[i, j, k] +
@@ -607,7 +652,11 @@ extract_targar_metrics <- function(results, setup) {
     ebic.0S = ebic.0S,
     ebic.param.0S = ebic.param.0S,
     ebic.gamma = gamma,
-    ebic.parameter.formula = "ar_order * (q + 1) + 1 + d + net.size"
+    dgp_ar_order = ar_order,
+    dgp_q = q,
+    fit_ar_order = fit_ar_order,
+    fit_q = fit_q,
+    ebic.parameter.formula = "fit_ar_order * (fit_q + 1) + 1 + d + net.size"
   ), R.refit.0S.err, selected)
   out
 }
