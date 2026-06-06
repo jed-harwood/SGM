@@ -66,6 +66,8 @@ edge.prob = 2 / d
 num.pass = 3
 stationary = FALSE
 
+## Original scripts used set.seed(1) for the graph and set.seed(5*p+n)
+## for data generation. Here d is the graph dimension p.
 graph.seed = 1
 data.seed = 5 * d + n
 

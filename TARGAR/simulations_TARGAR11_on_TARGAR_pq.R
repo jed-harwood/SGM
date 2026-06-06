@@ -68,6 +68,8 @@ fit.ar.order = 1
 fit.q = 1
 stationary = TRUE
 
+## Original scripts used set.seed(1) for the graph and set.seed(5*p+n)
+## for data generation. Here d is the graph dimension p.
 graph.seed = 1
 data.seed = 5 * d + n
 

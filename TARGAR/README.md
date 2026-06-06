@@ -57,6 +57,8 @@ theta0 = 1
 theta1 = 2
 edge.prob = 2 / d
 num.pass = 3
+graph.seed = 1
+data.seed = 5 * d + n
 ```
 
 Use:
@@ -84,6 +86,10 @@ There is no burn-in. This is intentional: the modular simulations use the
 model-specific initialization directly and then fit the generated `n`
 observations.
 
+The original random seeds are kept: `graph.seed = 1` matches the original
+`set.seed(1)` before graph generation, and `data.seed = 5 * d + n` matches the
+original `set.seed(5*p+n)` before data generation.
+
 ## TAR-GAR(1,1) On TAR-GAR(p,q)
 
 Use `simulations_TARGAR11_on_TARGAR_pq.R` for the simulations where the
@@ -102,6 +108,8 @@ theta1 = 2
 edge.prob = 2 / d
 fit.ar.order = 1
 fit.q = 1
+graph.seed = 1
+data.seed = 5 * d + n
 ```
 
 Use:
