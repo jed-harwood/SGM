@@ -58,6 +58,7 @@ d = 100
 n = 100
 data.q = 3
 n.rep = 100
+generation.n = n
 model = "LN"
 theta0 = 1
 theta1 = 2
@@ -92,11 +93,23 @@ deg.max.iter = 50000
 lap.z.max.iter = 50000
 eta.max.iter = 1000
 
-## True data-generating TAR-GAR filter coefficients. Edit this function when
-## changing data.ar.order or data.q.
-eta.builder = function(lambda.max) {
-  c(0.1, 0.12 / lambda.max, 0.2 / lambda.max^2, 0.3 / lambda.max^3)
-}
+## Build the graph first so lambda.max is available for manual eta vectors.
+graph.config = list(
+  d = d,
+  model = model,
+  edge.prob = edge.prob,
+  graph_seed = graph.seed,
+  graph_min = graph.min,
+  graph_max = graph.max,
+  selfloop = selfloop,
+  isolate = isolate
+)
+graph.setup = prepare_targar_graph(graph.config)
+lambda.max = graph.setup$lambda.max
+
+## True data-generating TAR-GAR filter coefficients. Edit this vector directly.
+eta = c(0.1, 0.12 / lambda.max, 0.2 / lambda.max^2,
+        0.3 / lambda.max^3)
 
 case = paste0("TARGAR_p", fit.ar.order, "q", fit.q,
               "_on_TARGAR_order", data.ar.order, "_q", data.q)
@@ -113,10 +126,12 @@ config = list(
   fit_q = fit.q,
   d = d,
   n = n,
+  generation_n = generation.n,
   n_rep = n.rep,
   model = model,
   theta0 = theta0,
   theta1 = theta1,
+  eta = eta,
   edge.prob = edge.prob,
   graph_seed = graph.seed,
   data_seed = data.seed,
@@ -134,7 +149,6 @@ config = list(
   deg_max_iter = deg.max.iter,
   lap_z_max_iter = lap.z.max.iter,
   eta_max_iter = eta.max.iter,
-  eta_builder = eta.builder,
   case = case,
   output_dir = output.dir,
   save_results = save.results,
@@ -145,7 +159,7 @@ config = list(
 #####################################
 #### Data Generation
 #####################################
-sim.setup = prepare_targar_simulation(config)
+sim.setup = prepare_targar_simulation(config, graph_setup = graph.setup)
 
 filename = paste0(config$case, "_d", d, "_n", n, "_model", model,
                   "_rep", n.rep, "_modular.RData")
@@ -160,6 +174,8 @@ eta.tr = sim.setup$eta
 eta.comp.tr = sim.setup$eta.comp
 truth = sim.setup$truth
 data = sim.setup$data
+generation.n = sim.setup$generation_n
+lambda.max = sim.setup$lambda.max
 lambda.v = sim.setup$lambda.v
 rho.v = sim.setup$rho.v
 net.thre = sim.setup$net.thre

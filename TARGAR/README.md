@@ -79,8 +79,8 @@ Use:
 
 All three defaults use `d = 100`, `model = "LN"`, `theta0 = 1`,
 `theta1 = 2`, `edge.prob = 2 / d`, the `lambda.v` grid
-`lambda.C * sqrt(log(d) / (n - ar.order))`, and the `net.thre` grid
-`C.thre * sqrt(log(d) / (n - ar.order))`.
+`lambda.C * sqrt(log(d) / (n - fit_ar_order))`, and the `net.thre`
+grid `C.thre * sqrt(log(d) / (n - fit_ar_order))`.
 
 The original `C.thre` defaults are kept:
 
@@ -94,6 +94,30 @@ if (d == 100) {
 }
 ```
 
+The simulation scripts build the graph first so `lambda.max` is available
+before the true TAR-GAR filter is specified. Edit `eta` directly using
+`lambda.max`, matching the original scripts:
+
+```r
+graph.setup = prepare_targar_graph(graph.config)
+lambda.max = graph.setup$lambda.max
+eta = c(0.2, 0.7 / lambda.max)
+```
+
+For example, with `ar.order = 3, q = 3`, set:
+
+```r
+eta = c(-0.1, 0.1 / lambda.max, 0.1 / lambda.max^2,
+        0.1 / lambda.max^3,
+        -0.1, 0.1 / lambda.max, 0.12 / lambda.max^2,
+        0.12 / lambda.max^3,
+        -0.2, 0.1 / lambda.max, 0.2 / lambda.max^2,
+        0.2 / lambda.max^3)
+```
+
+`lambda.max` is also returned as `sim.setup$lambda.max` after
+`prepare_targar_simulation()`.
+
 The data generator uses the model-specific initialization directly:
 
 | AR order | Initialization |
@@ -105,6 +129,13 @@ The data generator uses the model-specific initialization directly:
 There is no burn-in. This is intentional: the modular simulations use the
 model-specific initialization directly and then fit the generated `n`
 observations.
+
+For exact reproduction of the original matched TAR-GAR(1,1) forecasting
+script, the setup includes `generation.n = n + 100` and then fits rows `1:n`.
+Those extra rows are not used as burn-in; they only preserve the old random
+number stream because the original generator drew the full innovation matrix
+before drawing the initial state. For the other TAR-GAR simulations,
+`generation.n = n`.
 
 The original random seeds are kept: `graph.seed = 1` matches the original
 `set.seed(1)` before graph generation, and `data.seed = 5 * d + n` matches the

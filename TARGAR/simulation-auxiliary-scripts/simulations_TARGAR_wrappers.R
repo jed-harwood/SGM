@@ -269,6 +269,7 @@ targar_default_config <- function(ar_order = 1) {
     d = 100,
     model = "LN",
     n_rep = 100,
+    generation_n = NULL,
     graph_seed = 1,
     edge.prob = NULL,
     graph_min = 0.5,
@@ -277,6 +278,7 @@ targar_default_config <- function(ar_order = 1) {
     isolate = FALSE,
     theta0 = 1,
     theta1 = 2,
+    eta = NULL,
     lambda.C = c(1.5, 1, 0.5, 0.25, 0.1),
     C.thre = NULL,
     eps.thre = 1e-6,
@@ -291,41 +293,27 @@ targar_default_config <- function(ar_order = 1) {
 
   if (ar_order == 1) {
     base$n = 500
+    base$generation_n = base$n + 100
     base$q = 1
     base$num.thread = 25
     base$num.pass = 3
     base$stationary = TRUE
-    base$eta_builder = function(lambda.max) {
-      c(0.2, 0.7 / lambda.max)
-    }
     base$case = "TARGAR_order1_q1"
   } else if (ar_order == 2) {
     base$n = 500
+    base$generation_n = base$n
     base$q = 3
     base$num.thread = 20
     base$num.pass = 3
     base$stationary = TRUE
-    base$eta_builder = function(lambda.max) {
-      c(0.05, 0.01 / lambda.max, 0.02 / lambda.max^2,
-        0.02 / lambda.max^3,
-        0.15, 0.2 / lambda.max, 0.2 / lambda.max^2,
-        0.1 / lambda.max^3)
-    }
     base$case = "TARGAR_order2_q3"
   } else {
     base$n = 100
+    base$generation_n = base$n
     base$q = 3
     base$num.thread = 25
     base$num.pass = 5
     base$stationary = TRUE
-    base$eta_builder = function(lambda.max) {
-      c(-0.1, 0.1 / lambda.max, 0.1 / lambda.max^2,
-        0.1 / lambda.max^3,
-        -0.1, 0.1 / lambda.max, 0.12 / lambda.max^2,
-        0.12 / lambda.max^3,
-        -0.2, 0.1 / lambda.max, 0.2 / lambda.max^2,
-        0.2 / lambda.max^3)
-    }
     base$case = "TARGAR_order3_q3"
   }
 
@@ -346,20 +334,19 @@ targar_on_targar_default_config <- function(dgp_ar_order = 1) {
 
   if (dgp_ar_order == 1) {
     config$n = 100
+    config$generation_n = config$n
     config$q = 3
     config$num.thread = 25
-    config$eta_builder = function(lambda.max) {
-      c(0.1, 0.12 / lambda.max, 0.2 / lambda.max^2,
-        0.3 / lambda.max^3)
-    }
     config$case = "TARGAR_p1q1_on_TARGAR_order1_q3"
   } else if (dgp_ar_order == 2) {
     config$n = 500
+    config$generation_n = config$n
     config$q = 3
     config$num.thread = 20
     config$case = "TARGAR_p1q1_on_TARGAR_order2_q3"
   } else if (dgp_ar_order == 3) {
     config$n = 500
+    config$generation_n = config$n
     config$q = 3
     config$num.thread = 25
     config$case = "TARGAR_p1q1_on_TARGAR_order3_q3"
@@ -381,17 +368,8 @@ targar_threshold_constants <- function(d) {
   }
 }
 
-prepare_targar_simulation <- function(config) {
+prepare_targar_graph <- function(config) {
   d = config$d
-  n = config$n
-  ar_order = config$ar_order
-  fit_ar_order = config$fit_ar_order %||% ar_order
-  q = config$q
-  n_eff = n - fit_ar_order
-  if (n_eff <= 0) {
-    stop("`n - fit_ar_order` must be positive.")
-  }
-
   set.seed(config$graph_seed)
   A = rand_graph(d, config$edge.prob, min = config$graph_min,
                  max = config$graph_max, selfloop = config$selfloop,
@@ -407,7 +385,49 @@ prepare_targar_simulation <- function(config) {
     v0 = matrix(sqrt(deg) / sqrt(sum(deg)), d, 1)
   }
   L.lam = eigen(L, symmetric = TRUE)$values
-  eta = config$eta_builder(max(L.lam))
+  lambda.max = max(L.lam)
+
+  list(A = A, net.tr = net.tr, deg = deg, L = L, L.lam = L.lam,
+       lambda.max = lambda.max, v0 = v0)
+}
+
+prepare_targar_simulation <- function(config, graph_setup = NULL) {
+  d = config$d
+  n = config$n
+  generation_n = config$generation_n %||% n
+  ar_order = config$ar_order
+  fit_ar_order = config$fit_ar_order %||% ar_order
+  q = config$q
+  n_eff = n - fit_ar_order
+  if (n_eff <= 0) {
+    stop("`n - fit_ar_order` must be positive.")
+  }
+  if (generation_n < n) {
+    stop("`generation_n` must be at least `n`.")
+  }
+
+  graph_setup = graph_setup %||% prepare_targar_graph(config)
+  A = graph_setup$A
+  net.tr = graph_setup$net.tr
+  deg = graph_setup$deg
+  L = graph_setup$L
+  L.lam = graph_setup$L.lam
+  lambda.max = graph_setup$lambda.max
+  v0 = graph_setup$v0
+
+  if (is.null(config$eta)) {
+    stop("`eta` must be supplied as a numeric vector after `lambda.max` is available.")
+  }
+  if (is.function(config$eta)) {
+    stop("`eta` must be a numeric vector, not a function.")
+  }
+  eta = as.numeric(config$eta)
+  if (length(eta) != ar_order * (q + 1)) {
+    stop("`eta` must have length ar_order * (q + 1).")
+  }
+  if (any(!is.finite(eta))) {
+    stop("`eta` must contain only finite numeric values.")
+  }
   eta.comp = eta_comparison(eta, theta1 = config$theta1,
                             ar_order = ar_order, q = q)
   truth = targar_truth(eta, theta0 = config$theta0,
@@ -421,14 +441,18 @@ prepare_targar_simulation <- function(config) {
 
   data_seed = config$data_seed %||% (5 * d + n)
   set.seed(data_seed)
-  data = generate_targar_data(n, truth = truth,
-                              ar_order = ar_order, n_rep = config$n_rep)
+  data.generated = generate_targar_data(generation_n, truth = truth,
+                                        ar_order = ar_order,
+                                        n_rep = config$n_rep)
+  data = lapply(data.generated, function(x) {
+    x[seq_len(n), , drop = FALSE]
+  })
 
   list(config = config, A = A, net.tr = net.tr, deg = deg, L = L,
        L.lam = L.lam, v0 = v0, eta = eta, eta.comp = eta.comp,
        truth = truth, lambda.v = lambda.v, net.thre = net.thre,
        C.thre = C.thre, rho.v = rho.v, data = data, data_seed = data_seed,
-       n_eff = n_eff)
+       generation_n = generation_n, lambda.max = lambda.max, n_eff = n_eff)
 }
 
 fit_targar_replicates <- function(setup, use_parallel = TRUE) {
