@@ -17,7 +17,11 @@ An R package for fitting Spectral Graph Models
 
 ## Overview
 
-This repository contains an R package for fitting Spectral Graph Models and a companion folder of scripts for reproducing the simulation and stock-market analyses from the GAR paper.
+This repository contains the `SGM` R package for fitting Spectral Graph Models
+and two companion analysis areas:
+
+* `GAR`: simulation and stock-market analyses from the GAR paper.
+* `TARGAR`: TAR-GAR simulations and the temperature application.
 
 Most users will work with the `SGM` package directly:
 
@@ -26,10 +30,16 @@ Most users will work with the `SGM` package directly:
 3. Select a final model with `model_selec()`.
 4. Extract `theta0`, `theta1`, `L`, and `v0` from the selected model.
 
+The `GAR` folder builds on that package API with reproducible simulation
+studies and a stock-market application for the GAR paper.
+
 For temporally dependent signals with explicit autoregressive graph filters,
 use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
 rhythm: fit a path over `lambda.v` and `net.thre`, select with
 `model_selec()`, then inspect the selected Laplacian and AR filter matrices.
+The `TARGAR` folder builds on that package API with reproducible simulations
+and a temperature application that compares TAR-GAR, G-VAR, and graphicalVAR
+on year-specific temperature data.
 
 ## Installation 
 
@@ -64,8 +74,10 @@ R CMD INSTALL ../../SGM
 This repository has three main folders.
 
 * `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
-* `TARGAR`: TAR-GAR simulation scripts and the temperature application.
 * `GAR`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
+* `TARGAR`: TAR-GAR simulation scripts, reusable TAR-GAR experiment helpers, and the temperature application.
+
+### `SGM` Package
 
 The `SGM` package folder contains:
 
@@ -74,21 +86,33 @@ The `SGM` package folder contains:
 * C++ solvers used by the ADMM routines, and
 * package examples.
 
-The `TARGAR` folder contains:
-
-* modular simulation scripts for TAR-GAR experiments,
-* reusable TAR-GAR simulation helpers,
-* `temp-application`, a year-selectable temperature application for TAR-GAR, G-VAR, and graphicalVAR analyses, and
-* generated simulation or application outputs under local `results/` folders.
+### `GAR` Analyses
 
 The `GAR` folder contains:
 
-* simulation workflows for the GAR paper experiments,
-* stock-data preprocessing and fitting scripts,
-* post-processing utilities for summarizing selected GAR models, and
-* example analysis pipelines that use the `SGM` package API end to end.
+* `GenData.R`, reusable GAR graph generation, Laplacian, and data-simulation utilities,
+* `simulations_GAR_JCGS.R`, the main GAR paper simulation driver,
+* `stock_data_script.R`, the stock-market application driver,
+* `stock-auxiliary-scripts/`, preprocessing and post-processing utilities for the stock application,
+* bundled stock data and derived stock-return data files, and
+* generated GAR, GLASSO, and stock-network outputs under the `GAR` folder.
 
 The `GAR` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
+
+### `TARGAR` Analyses And Temperature Application
+
+The `TARGAR` folder contains:
+
+* `simulations_TARGAR.R`, the main TAR-GAR simulation driver,
+* `simulations_TARGAR11_on_TARGAR_pq.R`, the misspecified TAR-GAR(1,1)-on-TAR-GAR(p,q) simulation driver,
+* `simulation-auxiliary-scripts/`, reusable helpers for TAR-GAR graph generation, data generation, fitting, eBIC computation, and metrics,
+* `temp-application/`, a year-selectable temperature application for TAR-GAR, G-VAR, and graphicalVAR analyses,
+* bundled temperature data, station files, kNN adjacency matrices, and Koppen-Geiger raster assets used by the temperature application, and
+* generated simulation or application outputs under local `results/` folders.
+
+The `TARGAR` folder is separate from the `SGM` package itself. It is intended
+for TAR-GAR reproducibility, worked examples, and the applied temperature
+workflow rather than as the package API.
 
 ## Main Functions
 
@@ -102,7 +126,7 @@ The `GAR` folder is separate from the `SGM` package itself and is intended for r
 
 `model_selec`: conduct model selection via the eBIC criterion.
 
-`TARGAR_fit`: fit a `TAR-GAR(p,q)` model for a given set of tuning parameters. Here `p` is the AR order, not the dimension of the data. The packaged TAR-GAR implementation supports `p = 1`, `p = 2`, and `p = 3`; `q` is the polynomial order in the graph Laplacian. The defaults match the original hard-coded pipeline: `q = 1`, `num.pass = 2`, `model = "LN"`, `eps.thre = 1e-6`, `eps_abs = 1e-5`, `eps_rel = 1e-3`, `max_iter = 50000`, `deg_max_iter = 50000`, `eta_max_iter = 1000`, and `stationary = TRUE`.
+`TARGAR_fit`: fit a `TAR-GAR(p,q)` model for a given set of tuning parameters. Here `p` is the AR order, not the dimension of the data. The packaged TAR-GAR implementation supports `p = 1`, `p = 2`, and `p = 3`; `q` is the polynomial order in the graph Laplacian. The defaults match the original hard-coded pipeline: `p = 1`, `q = 1`, `num.pass = 3`, `model = "LN"`, `eps.thre = 1e-6`, `eps_abs = 1e-5`, `eps_rel = 1e-3`, `max_iter = 50000`, `deg_max_iter = 50000`, `eta_max_iter = 1000`, and `stationary = TRUE`.
 
 `GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data, as proposed in Harwood, Paul, and Peng (2024). Valid for $n \geq p$. Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
@@ -183,7 +207,7 @@ fit <- fit_TAR_GAR(data, p = 1, q = 1,
 | lambda.v | numeric vector |  | Tuning parameter controlling sparsity of the estimated graph. |
 | net.thre | numeric vector |  | Thresholding parameter used to remove noisy edges and define final refit zero-patterns. |
 | rho.v | numeric vector | lambda.v | ADMM parameter sequence, typically set to `lambda.v` or `pmax(lambda.v, 0.01)`. |
-| num.pass | integer | 2 | Number of alternating TAR-GAR passes before final refitting. |
+| num.pass | integer | 3 | Number of alternating TAR-GAR passes before final refitting. |
 | model | character | "LN" | Innovation graph model: "LN", "L", or "LN.noselfloop". |
 | p | integer | 1 | AR order; must be 1, 2, or 3. |
 | q | integer | 1 | Polynomial order in the graph Laplacian; must be positive. |
@@ -411,7 +435,7 @@ fit = TARGAR_fit(
   rho.v = rho.v,
   p = ar.order,
   q = poly.order,
-  num.pass = 2,
+  num.pass = 3,
   model = model
 )
 

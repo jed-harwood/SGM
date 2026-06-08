@@ -736,8 +736,8 @@ validate_targar_fit_inputs <- function(data, p, q, lambda.v, net.thre, model,
   invisible(model)
 }
 
-TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
-                        rho.v = lambda.v, num.pass = 2, model = "LN",
+TAR.GAR.fit <- function(data, p = 1, q = 1, lambda.v, net.thre,
+                        rho.v = lambda.v, num.pass = 3, model = "LN",
                         eps.thre = 1e-6, eps_abs = 1e-5,
                         eps_rel = 1e-3, max_iter = 50000,
                         deg_max_iter = 50000,
@@ -921,7 +921,7 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
 #'   zero-patterns for the final refit.
 #' @param rho.v Positive ADMM parameter sequence. Defaults to `lambda.v`.
 #' @param num.pass Positive integer number of alternating TAR-GAR passes before
-#'   the final refit. Defaults to 2.
+#'   the final refit. Defaults to 3.
 #' @param model One of `"LN"`, `"L"`, or `"LN.noselfloop"`, matching the GAR
 #'   structure used for the innovation covariance.
 #' @param p AR order. Must be 1, 2, or 3. Defaults to 1 for compatibility with
@@ -970,7 +970,7 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
 #'
 #' fit = TARGAR_fit(
 #'   y, lambda.v = lambda.v, net.thre = net.thre, rho.v = rho.v,
-#'   p = 1, q = 1, num.pass = 2, model = "LN"
+#'   p = 1, q = 1, num.pass = 3, model = "LN"
 #' )
 #' sel = model_selec(fit)
 #'
@@ -982,7 +982,7 @@ TAR.GAR.fit <- function(data, p, q = 1, lambda.v, net.thre,
 #'
 #' @export
 TARGAR_fit <- function(data, lambda.v, net.thre, rho.v = lambda.v,
-                       num.pass = 2, model = "LN", p = 1, q = 1,
+                       num.pass = 3, model = "LN", p = 1, q = 1,
                        eps.thre = 1e-6, eps_abs = 1e-5,
                        eps_rel = 1e-3, max_iter = 50000,
                        deg_max_iter = 50000,
@@ -1002,8 +1002,8 @@ TARGAR_fit <- function(data, lambda.v, net.thre, rho.v = lambda.v,
 
 #' @rdname TARGAR_fit
 #' @export
-fit_TAR_GAR <- function(data, p, q, lambda.v, net.thre, rho.v = lambda.v,
-                        num.pass = 2, model = "LN", eps.thre = 1e-6,
+fit_TAR_GAR <- function(data, p = 1, q = 1, lambda.v, net.thre, rho.v = lambda.v,
+                        num.pass = 3, model = "LN", eps.thre = 1e-6,
                         eps_abs = 1e-5, eps_rel = 1e-3,
                         max_iter = 50000, deg_max_iter = 50000,
                         lap_z_max_iter = max_iter,

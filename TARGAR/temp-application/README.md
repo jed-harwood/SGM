@@ -40,6 +40,9 @@ Rscript run_temp_application.R --year=2011 --model=both
 
 Available models are `both`, `targar`, and `graphicalvar`.
 
+The TAR-GAR temperature pipeline still fits the full `p = 1,2,3` by `q = 1,2,3`
+grid and uses `num.pass = 3` by default.
+
 You can also edit the setup block in `run_temp_application.R`:
 
 ```r

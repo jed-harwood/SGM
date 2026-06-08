@@ -10,7 +10,7 @@ TARGAR_fit(
   lambda.v,
   net.thre,
   rho.v = lambda.v,
-  num.pass = 2,
+  num.pass = 3,
   model = "LN",
   p = 1,
   q = 1,
@@ -28,12 +28,12 @@ TARGAR_fit(
 
 fit_TAR_GAR(
   data,
-  p,
-  q,
+  p = 1,
+  q = 1,
   lambda.v,
   net.thre,
   rho.v = lambda.v,
-  num.pass = 2,
+  num.pass = 3,
   model = "LN",
   eps.thre = 1e-06,
   eps_abs = 1e-05,
@@ -59,7 +59,7 @@ zero-patterns for the final refit.}
 \item{rho.v}{Positive ADMM parameter sequence. Defaults to \code{lambda.v}.}
 
 \item{num.pass}{Positive integer number of alternating TAR-GAR passes before
-the final refit. Defaults to 2.}
+the final refit. Defaults to 3.}
 
 \item{model}{One of \code{"LN"}, \code{"L"}, or \code{"LN.noselfloop"}, matching the GAR
 structure used for the innovation covariance.}
@@ -131,7 +131,7 @@ net.thre = exp(seq(log(1), log(0.1), length.out = 5)) *
 
 fit = TARGAR_fit(
   y, lambda.v = lambda.v, net.thre = net.thre, rho.v = rho.v,
-  p = 1, q = 1, num.pass = 2, model = "LN"
+  p = 1, q = 1, num.pass = 3, model = "LN"
 )
 sel = model_selec(fit)
 

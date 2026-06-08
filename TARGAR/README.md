@@ -1,11 +1,15 @@
 # TARGAR
 
-This folder contains the TAR-GAR simulation scripts and the temperature
-application. The simulation scripts mirror the user-facing structure of
-`GAR`: a main simulation driver at the top level and reusable
-helper functions in an auxiliary script folder. The temperature application is
-organized separately under `temp-application` with a user-facing runner and
-shared backend code for TAR-GAR, G-VAR, and graphicalVAR analyses.
+This folder is the TAR-GAR analysis area for the repository. It contains the
+TAR-GAR simulation suite, reusable simulation helpers, and the temperature
+application for comparing TAR-GAR, G-VAR, and graphicalVAR on year-specific
+temperature data.
+
+The simulation scripts are organized around main user-facing drivers at the
+top level and reusable helper functions in `simulation-auxiliary-scripts`.
+The temperature application is organized separately under `temp-application`
+with one user-facing runner and shared backend code for paths, defaults,
+summaries, and model dispatch.
 
 ## Contents
 
@@ -98,6 +102,9 @@ Available models are `both`, `targar`, and `graphicalvar`. The bundled
 temperature years are 2011 through 2020. The runner validates years from files
 named `data/temperature/temp_<year>.Rda`, `data/temperature/temp_<year>.csv`,
 and the 2020 source file `data/temperature/dailytemp_gsod.csv`.
+
+For TAR-GAR, the temperature application still fits the full `p = 1,2,3` by
+`q = 1,2,3` grid and uses `num.pass = 3` by default.
 
 The application expects all required files to live inside
 `TARGAR/temp-application`:
