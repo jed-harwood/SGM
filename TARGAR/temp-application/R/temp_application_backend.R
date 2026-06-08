@@ -102,7 +102,14 @@ temp_available_years <- function() {
     Sys.glob(temp_temperature_path("temp_*.csv"))
   ))
   files <- files[grepl("^temp_[0-9]{4}\\.(Rda|csv)$", files)]
-  sort(unique(as.integer(sub("^temp_([0-9]{4})\\..*$", "\\1", files))))
+  years <- as.integer(sub("^temp_([0-9]{4})\\..*$", "\\1", files))
+
+  ## The original 2020 application data is stored under this source name.
+  if (file.exists(temp_temperature_path("dailytemp_gsod.csv"))) {
+    years <- c(years, 2020L)
+  }
+
+  sort(unique(years))
 }
 
 temp_validate_year <- function(year) {
@@ -124,7 +131,14 @@ temp_year_config <- function(year, prefer_rda = TRUE) {
   year <- temp_validate_year(year)
 
   rda_path <- temp_temperature_path(sprintf("temp_%s.Rda", year))
-  csv_path <- temp_temperature_path(sprintf("temp_%s.csv", year))
+  csv_candidates <- temp_temperature_path(sprintf("temp_%s.csv", year))
+  if (identical(year, 2020L)) {
+    csv_candidates <- c(csv_candidates, temp_temperature_path("dailytemp_gsod.csv"))
+  }
+  csv_path <- csv_candidates[file.exists(csv_candidates)][1]
+  if (is.na(csv_path)) {
+    csv_path <- csv_candidates[1]
+  }
   has_rda <- file.exists(rda_path)
   has_csv <- file.exists(csv_path)
 
@@ -141,7 +155,9 @@ temp_year_config <- function(year, prefer_rda = TRUE) {
     stop("No temperature data file found for ", year, call. = FALSE)
   }
 
-  station_data_path <- if (year >= 2011 && year <= 2015) {
+  station_data_path <- if (identical(year, 2020L)) {
+    data_path
+  } else if (year >= 2011 && year <= 2015) {
     temp_temperature_path("temp_CA_2010_2015.csv")
   } else if (has_csv) {
     csv_path
@@ -162,7 +178,7 @@ temp_year_config <- function(year, prefer_rda = TRUE) {
   )
   latlong_path <- latlong_candidates[file.exists(latlong_candidates)][1]
   if (is.na(latlong_path)) {
-    latlong_path <- latlong_candidates[1]
+    latlong_path <- if (identical(year, 2020L)) data_path else latlong_candidates[1]
   }
 
   list(

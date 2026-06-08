@@ -1,4 +1,4 @@
-# GAR-Paper-Analyses
+# GAR
 
 This folder contains the companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper. These scripts are separate from the `SGM` package itself and are intended for reproducibility, experimentation, and worked examples.
 

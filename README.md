@@ -6,11 +6,10 @@ An R package for fitting Spectral Graph Models
 
 ## Contents
 - [Overview](#Overview)
-- [Repository Layout](#Repository-Layout)
 - [Installation](#Installation)
-- [Datasets](#Datasets)
+- [Repo Layout](#Repo-Layout)
 - [Main Functions](#Main-Functions)
-- [Goodness of Fit](#Goodness-of-Fit)
+- [Datasets](#Datasets)
 - [Examples](#Examples)
 - [Contact](#Contact)
 
@@ -32,23 +31,6 @@ use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
 rhythm: fit a path over `lambda.v` and `net.thre`, select with
 `model_selec()`, then inspect the selected Laplacian and AR filter matrices.
 
-## Repository Layout
-
-This repository has two main folders.
-
-* `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
-* `GAR-Paper-Analyses`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
-
-The `GAR-Paper-Analyses` folder contains:
-
-* simulation workflows for the GAR paper experiments,
-* stock-data preprocessing and fitting scripts,
-* post-processing utilities for summarizing selected GAR models, and
-* example analysis pipelines that use the `SGM` package API end to end.
-
-The `GAR-Paper-Analyses` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
-
-
 ## Installation 
 
 ### Dependencies
@@ -65,37 +47,48 @@ library(devtools)
 install_github(repo="jed-harwood/SGM", subdir="SGM")
 ```
 
-## Datasets
+From a local checkout of this repository, install the package with:
 
-This repository currently contains three datasets.  To load a dataset into the working environment, run `data("<dataname>")`.  
+```sh
+R CMD INSTALL SGM
+```
 
+The temperature application in `TARGAR/temp-application` also relies on the installed `SGM` package for TAR-GAR, prediction, and G-VAR functions. When running from inside that application folder, reinstall the local package with:
 
-* `gar1`: A sample simulated from an underlying GAR(1) model, with p=100, n=100. The underlying graph was a random graph with edge probability 0.02.
-* `stocks`: A collection of (standardized) log-returns from 283 stocks on the S\&P 500.  The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.  The stocks come from five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials.
-* `targar`: A sample simulated from an underlying TAR-GAR model, with p=100 nodes and n=100 observations.
+```sh
+R CMD INSTALL ../../SGM
+```
 
-These datasets can be accessed as the following R objects.
+## Repo Layout
 
-`gar1`:  A list object that contains:
-1. `data`: data simulated under a `GAR(1)` model.
-2. `A.tr`: the true weighted adjacency matrix for the underlying graph.
-3. `LN`: the true normalized graph Laplacian matrix.
-4. `theta0`, `theta1`: the true graph filter parameters.  
+This repository has three main folders.
 
+* `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
+* `TARGAR`: TAR-GAR simulation scripts and the temperature application.
+* `GAR`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
 
-`stocks`: A 1007 by 283 matrix.
+The `SGM` package folder contains:
 
-`targar`: A list object that contains:
-1. `data`: data simulated under a TAR-GAR model.
-2. `A.tr`: the true weighted adjacency matrix for the underlying graph.
-3. `LN`: the true normalized graph Laplacian matrix.
-4. `theta0`, `theta1`: the true innovation graph filter parameters.
-5. `eta0`, `eta1`: the true TAR filter parameters for the included example.
+* user-facing fitting functions for GAR(1), TAR-GAR, model selection, forecasting, and goodness-of-fit calculations,
+* package documentation and datasets,
+* C++ solvers used by the ADMM routines, and
+* package examples.
 
+The `TARGAR` folder contains:
 
-For more information on a given dataset, please run `?<dataname>`.  
+* modular simulation scripts for TAR-GAR experiments,
+* reusable TAR-GAR simulation helpers,
+* `temp-application`, a year-selectable temperature application for TAR-GAR, G-VAR, and graphicalVAR analyses, and
+* generated simulation or application outputs under local `results/` folders.
 
-***
+The `GAR` folder contains:
+
+* simulation workflows for the GAR paper experiments,
+* stock-data preprocessing and fitting scripts,
+* post-processing utilities for summarizing selected GAR models, and
+* example analysis pipelines that use the `SGM` package API end to end.
+
+The `GAR` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
 
 ## Main Functions
 
@@ -110,6 +103,14 @@ For more information on a given dataset, please run `?<dataname>`.
 `model_selec`: conduct model selection via the eBIC criterion.
 
 `TARGAR_fit`: fit a `TAR-GAR(p,q)` model for a given set of tuning parameters. Here `p` is the AR order, not the dimension of the data. The packaged TAR-GAR implementation supports `p = 1`, `p = 2`, and `p = 3`; `q` is the polynomial order in the graph Laplacian. The defaults match the original hard-coded pipeline: `q = 1`, `num.pass = 2`, `model = "LN"`, `eps.thre = 1e-6`, `eps_abs = 1e-5`, `eps_rel = 1e-3`, `max_iter = 50000`, `deg_max_iter = 50000`, `eta_max_iter = 1000`, and `stationary = TRUE`.
+
+`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data, as proposed in Harwood, Paul, and Peng (2024). Valid for $n \geq p$. Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
+
+`TARGAR_pred`: forecast future observations from a selected TAR-GAR fit.
+
+`ARp_pred`: forecast future observations with a standard AR(p) baseline.
+
+`GVAR_fit`: fit the G-VAR baseline used by the temperature application. The compatibility wrapper `G.VAR.Fit()` is also exported for older scripts.
 
 Typical workflow:
 
@@ -197,6 +198,23 @@ fit <- fit_TAR_GAR(data, p = 1, q = 1,
 | verbose | logical | FALSE | Logical flag indicating whether to print progress during fitting. |
 
 
+**Table: Arguments for `GAR1_gf`**
+
+| Parameter    | Default   | Description |
+|--------------|----------|-------------|
+| S            |          | Estimate of the covariance matrix (e.g., the MLE). |
+| nobs         |          | Number of observations used to compute `S`. |
+| lambda.v     |          | Positive tuning parameter for the GAR(1) model. This should typically be set to `sqrt(log(p)/nobs)` where `p` is the dimension and `nobs` is the sample size. |
+| rho.v        | lambda.v | ADMM penalty parameter (positive; typically set equal to `lambda.v`). |
+| eps_thre     | 1e-6     | Small positive threshold used for numerical stability. |
+| eps_abs      | 1e-5     | Absolute tolerance for ADMM convergence. |
+| eps_rel      | 1e-3     | Relative tolerance for ADMM convergence. |
+| max_iter     | 10000    | Maximum number of iterations for fitting on observed data. |
+| num.thread   | 1        | Number of threads used for computation. |
+| rep.boot     | 100      | Number of bootstrap samples used for the goodness-of-fit test. |
+| seed         | 1        | Random seed for reproducibility. |
+
+
 
 
 ### Value
@@ -245,6 +263,43 @@ For most applications, you do not need to inspect `step1`, `step2`, `step3a`, or
 | eta | numeric vector | For TAR-GAR fits, selected polynomial filter coefficients. |
 | p, q | integer | For TAR-GAR fits, selected model AR order and polynomial order metadata. |
 
+
+**Table: Output of `GAR1_gf`**
+
+| Output  | Description |
+|---------|-------------|
+| p-value | P-value for the goodness-of-fit test. |
+
+
+## Datasets
+
+This repository currently contains three datasets.  To load a dataset into the working environment, run `data("<dataname>")`.  
+
+
+* `gar1`: A sample simulated from an underlying GAR(1) model, with p=100, n=100. The underlying graph was a random graph with edge probability 0.02.
+* `stocks`: A collection of (standardized) log-returns from 283 stocks on the S\&P 500.  The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.  The stocks come from five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials.
+* `targar`: A sample simulated from an underlying TAR-GAR model, with p=100 nodes and n=100 observations.
+
+These datasets can be accessed as the following R objects.
+
+`gar1`:  A list object that contains:
+1. `data`: data simulated under a `GAR(1)` model.
+2. `A.tr`: the true weighted adjacency matrix for the underlying graph.
+3. `LN`: the true normalized graph Laplacian matrix.
+4. `theta0`, `theta1`: the true graph filter parameters.  
+
+
+`stocks`: A 1007 by 283 matrix.
+
+`targar`: A list object that contains:
+1. `data`: data simulated under a TAR-GAR model.
+2. `A.tr`: the true weighted adjacency matrix for the underlying graph.
+3. `LN`: the true normalized graph Laplacian matrix.
+4. `theta0`, `theta1`: the true innovation graph filter parameters.
+5. `eta0`, `eta1`: the true TAR filter parameters for the included example.
+
+
+For more information on a given dataset, please run `?<dataname>`.  
 
 
 
@@ -375,43 +430,7 @@ paths use quadratic programs from `quadprog`.
 
 
 
-***
-
-## Goodness-of-Fit
-
-The package offers a goodness-of-fit measure as proposed in Harwood, Paul, and Peng (2024).  
-
-`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data. Valid for $n \geq p$.  Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
-
-
-**Table: Arguments for `GAR1_gf`**
-
-| Parameter    | Default   | Description |
-|--------------|----------|-------------|
-| S            |          | Estimate of the covariance matrix (e.g., the MLE). |
-| nobs         |          | Number of observations used to compute `S`. |
-| lambda.v     |          | Positive tuning parameter for the GAR(1) model. This should typically be set to `sqrt(log(p)/nobs)` where `p` is the dimension and `nobs` is the sample size. |
-| rho.v        | lambda.v | ADMM penalty parameter (positive; typically set equal to `lambda.v`). |
-| eps_thre     | 1e-6     | Small positive threshold used for numerical stability. |
-| eps_abs      | 1e-5     | Absolute tolerance for ADMM convergence. |
-| eps_rel      | 1e-3     | Relative tolerance for ADMM convergence. |
-| max_iter     | 10000    | Maximum number of iterations for fitting on observed data. |
-| num.thread   | 1        | Number of threads used for computation. |
-| rep.boot     | 100      | Number of bootstrap samples used for the goodness-of-fit test. |
-| seed         | 1        | Random seed for reproducibility. |
-
-
-**Table: Output of `GAR1_gf`**
-
-| Output  | Description |
-|---------|-------------|
-| p-value | P-value for the goodness-of-fit test. |
-
-
-
-
-
-
+### Compute the `GAR(1)` goodness-of-fit measure.
 
 ```
 ### load libraries

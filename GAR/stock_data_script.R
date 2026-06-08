@@ -3,8 +3,23 @@
 ## Requires: stock_data_processing.R, stockdata.rda ##
 ######################################################
 
+script_path <- NULL
+for (i in rev(seq_along(sys.frames()))) {
+  if (!is.null(sys.frames()[[i]]$ofile)) {
+    script_path <- sys.frames()[[i]]$ofile
+    break
+  }
+}
+if (is.null(script_path)) {
+  script_path <- "GAR/stock_data_script.R"
+}
+script_dir <- dirname(normalizePath(script_path, winslash = "/", mustWork = FALSE))
+old_wd <- getwd()
+setwd(script_dir)
+on.exit(setwd(old_wd), add = TRUE)
+
 ## Load SGM and the Stock data
-rm(list=ls())
+rm(list = setdiff(ls(), c("script_path", "script_dir", "old_wd")))
 library(SGM)
 
 ## Load pre-processed data

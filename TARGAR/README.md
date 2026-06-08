@@ -1,9 +1,11 @@
 # TARGAR
 
-This folder contains modular simulation scripts for the TAR-GAR experiments.
-The scripts mirror the user-facing structure of `GAR-Paper-Analyses`: a main
-simulation driver at the top level and reusable helper functions in an
-auxiliary script folder.
+This folder contains the TAR-GAR simulation scripts and the temperature
+application. The simulation scripts mirror the user-facing structure of
+`GAR`: a main simulation driver at the top level and reusable
+helper functions in an auxiliary script folder. The temperature application is
+organized separately under `temp-application` with a user-facing runner and
+shared backend code for TAR-GAR, G-VAR, and graphicalVAR analyses.
 
 ## Contents
 
@@ -12,7 +14,26 @@ auxiliary script folder.
 | `simulations_TARGAR.R` | Main simulation script. It sets the TAR-GAR order/configuration, generates data, fits TAR-GAR models over tuning grids, computes 0S/eBIC metrics, prints summaries, and saves results. |
 | `simulations_TARGAR11_on_TARGAR_pq.R` | Separate simulation script for fitting TAR-GAR(p = 1, q = 1) to data generated from the TAR-GAR(p, q) models. |
 | `simulation-auxiliary-scripts/simulations_TARGAR_wrappers.R` | Helper functions for graph generation, TAR-GAR data generation, fitting replicates, computing eBIC, and extracting selected 0S/eBIC metrics. |
+| `temp-application/` | Temperature application for running TAR-GAR, G-VAR, and graphicalVAR on a selected year. |
 | `results/` | Default output folder created by the simulation scripts. |
+
+## Installation
+
+The scripts in this folder rely on the local `SGM` package for TAR-GAR fitting,
+prediction, and G-VAR functionality. From the repository root, install or
+reinstall the package before running either the simulations or the temperature
+application:
+
+```sh
+R CMD INSTALL SGM
+```
+
+The package can also be installed from GitHub:
+
+```r
+library(devtools)
+install_github(repo = "jed-harwood/SGM", subdir = "SGM")
+```
 
 ## Typical Workflow
 
@@ -41,6 +62,59 @@ For the misspecified TAR-GAR(1,1)-on-TAR-GAR(p,q) simulations, use:
 ```r
 source("TARGAR/simulations_TARGAR11_on_TARGAR_pq.R")
 ```
+
+## Temperature Application
+
+The temperature application lives in `TARGAR/temp-application`. It has one
+user-facing script and a separate backend:
+
+| File or folder | Description |
+|---|---|
+| `run_temp_application.R` | User-facing entrypoint. Pick `year` and `model` in the setup block, or pass them as command-line arguments. |
+| `R/temp_application_backend.R` | Shared backend for paths, year configuration, defaults, summaries, and calls into the model pipelines. |
+| `R/temp_pipeline.R` | TAR-GAR and G-VAR temperature pipeline. |
+| `R/graphicalvar_temp_pipeline.R` | graphicalVAR temperature pipeline. |
+| `scripts/` | Legacy one-model launchers that call the shared backend. |
+| `data/temperature/` | Yearly temperature files and combined source CSVs. |
+| `data/stations/` | Station latitude/longitude files. |
+| `data/knn_adj_matrices/` | Year-specific stored kNN adjacency matrices. |
+| `data/koppen_geiger_tif/` | Koppen-Geiger raster files and legend. |
+| `results/` | Generated `.RData`, clustering summaries, and plot PDFs. |
+
+Run the application from the repository root with:
+
+```sh
+Rscript TARGAR/temp-application/run_temp_application.R --year=2011 --model=both
+```
+
+Or run from inside `TARGAR/temp-application`:
+
+```sh
+R CMD INSTALL ../../SGM
+Rscript run_temp_application.R --year=2011 --model=both
+```
+
+Available models are `both`, `targar`, and `graphicalvar`. The bundled
+temperature years are 2011 through 2020. The runner validates years from files
+named `data/temperature/temp_<year>.Rda`, `data/temperature/temp_<year>.csv`,
+and the 2020 source file `data/temperature/dailytemp_gsod.csv`.
+
+The application expects all required files to live inside
+`TARGAR/temp-application`:
+
+| Required files | Expected location |
+|---|---|
+| Temperature data, 2011-2019 | `data/temperature/temp_<year>.Rda` or `data/temperature/temp_<year>.csv` |
+| Temperature data, 2020 | `data/temperature/dailytemp_gsod.csv` |
+| Station coordinates, 2011-2019 | `data/stations/latlong_<yy>.csv` or the matching file inside the year-specific kNN folder |
+| Station coordinates, 2020 | Embedded in `data/temperature/dailytemp_gsod.csv` |
+| kNN adjacency matrices, 2011-2019 | `data/knn_adj_matrices/tr<year>/adjacency_matrix_k_<k>.mtx` |
+| kNN adjacency matrices, 2020 | `data/knn_adj_matrices/adjacency_matrix_k_<k>.mtx` |
+| Koppen-Geiger raster | `data/koppen_geiger_tif/1991_2020/koppen_geiger_0p00833333.tif` |
+
+The application uses package-owned `SGM::fit_TAR_GAR()`,
+`SGM::TARGAR_pred()`, and `SGM::GVAR_fit()` rather than sourcing separate local
+TAR-GAR or G-VAR implementation files.
 
 ## Selecting The Simulation
 
@@ -225,8 +299,8 @@ output file. Set `keep.fits = FALSE` to save only setup, metrics, and summaries.
 
 ## Notes
 
-- These scripts assume the local `SGM` package is installed and that the TAR-GAR
-  package functions are available.
+- These scripts assume the local `SGM` package is installed. TAR-GAR,
+  prediction, and G-VAR helpers are loaded from the package exports.
 - Several runs are computationally expensive with the original defaults
   (`d = 100`, `n.rep = 100`). For quick checks, temporarily reduce `d`,
   `n`, `n.rep`, and `num.thread` in the setup block.
