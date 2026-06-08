@@ -58,12 +58,12 @@ ADMM_Lap(
 }
 \value{
 \itemize{
-\item \code{L}: A p by p matrix.
+\item \code{L}: A d by d matrix.
 \item \code{theta0}: A positive number.
 \item \code{theta1}: A positive number.
-\item \code{Z}: A p by p matrix.
+\item \code{Z}: A d by d matrix.
 \item \code{phi}: A positive number.
-\item \code{W}: A p by p matrix.
+\item \code{W}: A d by d matrix.
 \item \verb{conv:} A boolean indicating convergence (TRUE if converged).
 }
 }

@@ -8,9 +8,9 @@ GVAR_fit(data, A, q, L_q_vec)
 G.VAR.Fit(data, A, q, L_q_vec)
 }
 \arguments{
-\item{data}{An n by p numeric data matrix.}
+\item{data}{An n by d numeric data matrix, where d is the signal dimension.}
 
-\item{A}{A p by p adjacency matrix.}
+\item{A}{A d by d adjacency matrix.}
 
 \item{q}{The autoregressive order.}
 

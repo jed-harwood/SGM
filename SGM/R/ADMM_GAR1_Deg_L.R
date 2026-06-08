@@ -74,12 +74,12 @@ w.Min<-function(v,u, epsilon=1e-2){
 #' `ADMM.Deg.L` returns an estimated degree vector to minimize ||Lv0||, with each element restricted to be at least epsilon.
 #' 
 #' @returns
-#' * `v`: A p by 1 matrix
-#' * `w`: A p by 1 matrix
-#' * `deg`: A p by 1 matrix
+#' * `v`: A d by 1 matrix
+#' * `w`: A d by 1 matrix
+#' * `deg`: A d by 1 matrix
 #' * `conv`: A boolean indicating whether the algorithm converged (TRUE) or didn't (FALSE).  
 #' 
-#' @param L A p by p normalized graph Laplacian
+#' @param L A d by d normalized graph Laplacian
 #' @param rho ADMM parameter (a positive number)
 #' @param epsilon A positive small value
 #' @param eps.abs ADMM convergence criterion
@@ -90,10 +90,10 @@ w.Min<-function(v,u, epsilon=1e-2){
 #'@export
 ADMM.Deg.L<-function(L,rho=0.01, epsilon=sqrt(1/nrow(S)), eps.abs=1e-5, eps.rel=1e-3, max.iter=1000, verbose=TRUE){
   ## ADMM algorithm to find the 0-eigenvector of LN, proportional to square-root of the degree vector of the graph
-  ## L: p by p, Laplacian 
+  ## L: d by d, Laplacian
   ## rho: ADMM parameter 
   ## epsilon: positive small value
-  ## return: v0: p by 1 matrix to minimize ||Lv0||, unit norm and  each element restricted to be at least epsilon
+  ## return: v0: d by 1 matrix to minimize ||Lv0||, unit norm and each element restricted to be at least epsilon
   ## deg: v0^2, proportional to degree vector, each element to be positive 
   ## conv: convergence status 
   

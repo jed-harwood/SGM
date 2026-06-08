@@ -228,8 +228,8 @@ gvar_autocov <- function(data, order = 0) {
 
 #' Fit an Isufi-style graph VAR model
 #'
-#' @param data An n by p numeric data matrix.
-#' @param A A p by p adjacency matrix.
+#' @param data An n by d numeric data matrix, where d is the signal dimension.
+#' @param A A d by d adjacency matrix.
 #' @param q The autoregressive order.
 #' @param L_q_vec Polynomial orders in the graph Laplacian for each lag.
 #'

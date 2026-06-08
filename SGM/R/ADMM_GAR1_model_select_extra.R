@@ -11,10 +11,10 @@
 ##### GAR(1): log-likelihood & BIC given Normal with Simga^{-1}=Omega=(theta0+theta1*L)^2
 ###### loglikelihood 
 LogLike<-function(S, theta0, theta1 = 1, L, n){
-  ##S: p by p sample covariance matrix  
+  ## S: d by d sample covariance matrix
   ## n -- sample size
   ## theta0, theta 1: GAR(1) parameters; theta1:  for the Laplacian model, theta1=1;
-  ## L: p by p Laplacian matrix (normalized or not)
+  ## L: d by d Laplacian matrix (normalized or not)
   p=nrow(S)
   temp=diag(theta0, p)+theta1*L
   
@@ -36,6 +36,5 @@ BIC<-function(loglike, n, k){
   bic=k*log(n)-2*loglike
   return(bic)
 }
-
 
 

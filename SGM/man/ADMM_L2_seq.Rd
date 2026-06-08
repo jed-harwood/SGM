@@ -20,7 +20,7 @@ ADMM_L2_seq(
 )
 }
 \arguments{
-\item{S}{A p by p estimate of the covariance matrix, such as the sample covariance matrix.}
+\item{S}{A d by d estimate of the covariance matrix, such as the sample covariance matrix.}
 
 \item{theta0}{Estimate for graph-filter parameter \code{theta0}.}
 

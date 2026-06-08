@@ -111,7 +111,7 @@ with the same workflow used for \code{GAR1_fit()}.
 \description{
 \code{TARGAR_fit()} fits a TAR-GAR(p,q) model to temporally dependent
 multivariate data. It alternates between estimating AR filter matrices
-\code{R1}, ..., \code{Rp} and estimating the latent graph Laplacian for the
+\code{R_1}, ..., \code{R_p} lag filters and estimating the latent graph Laplacian for the
 innovation process, then refits the graph over the supplied \code{net.thre}
 sequence.
 }

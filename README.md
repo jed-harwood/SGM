@@ -128,7 +128,7 @@ workflow rather than as the package API.
 
 `TARGAR_fit`: fit a `TAR-GAR(p,q)` model for a given set of tuning parameters. Here `p` is the AR order, not the dimension of the data. The packaged TAR-GAR implementation supports `p = 1`, `p = 2`, and `p = 3`; `q` is the polynomial order in the graph Laplacian. The defaults match the original hard-coded pipeline: `p = 1`, `q = 1`, `num.pass = 3`, `model = "LN"`, `eps.thre = 1e-6`, `eps_abs = 1e-5`, `eps_rel = 1e-3`, `max_iter = 50000`, `deg_max_iter = 50000`, `eta_max_iter = 1000`, and `stationary = TRUE`.
 
-`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data, as proposed in Harwood, Paul, and Peng (2024). Valid for $n \geq p$. Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
+`GAR1_gf`: calculate a goodness-of-fit measure to determine if `GAR(1)` is an appropriate model for the data, as proposed in Harwood, Paul, and Peng (2024). Valid when the sample size is at least the signal dimension, i.e. $n \geq d$. Return a value between $0$ and $1$. If the returned value is close to $1$, then it means that the `GAR(1)` model is a good fit to the data.
 
 `TARGAR_pred`: forecast future observations from a selected TAR-GAR fit.
 
@@ -228,7 +228,7 @@ fit <- fit_TAR_GAR(data, p = 1, q = 1,
 |--------------|----------|-------------|
 | S            |          | Estimate of the covariance matrix (e.g., the MLE). |
 | nobs         |          | Number of observations used to compute `S`. |
-| lambda.v     |          | Positive tuning parameter for the GAR(1) model. This should typically be set to `sqrt(log(p)/nobs)` where `p` is the dimension and `nobs` is the sample size. |
+| lambda.v     |          | Positive tuning parameter for the GAR(1) model. This should typically be set to `sqrt(log(d)/nobs)` where `d` is the signal dimension and `nobs` is the sample size. |
 | rho.v        | lambda.v | ADMM penalty parameter (positive; typically set equal to `lambda.v`). |
 | eps_thre     | 1e-6     | Small positive threshold used for numerical stability. |
 | eps_abs      | 1e-5     | Absolute tolerance for ADMM convergence. |
@@ -248,7 +248,7 @@ fit <- fit_TAR_GAR(data, p = 1, q = 1,
 
 | Output | Data type | Description |
 |--------|-----------|-------------|
-| S | matrix | The \( p \times p \) covariance matrix supplied to `GAR1_fit`. |
+| S | matrix | The \( d \times d \) covariance matrix supplied to `GAR1_fit`, where `d` is the signal dimension. |
 | nobs | integer | Number of observations used to compute `S`. |
 | model | character | The fitted GAR model family. |
 | step | integer | The last step requested in the fitting procedure. |
@@ -283,7 +283,7 @@ For most applications, you do not need to inspect `step1`, `step2`, `step3a`, or
 | lambda.v | numeric scalar | Selected value of `lambda.v`. |
 | net.thre | numeric scalar | Selected value of `net.thre`. |
 | ebic | numeric scalar | eBIC score of the selected model. |
-| R_list | list | For TAR-GAR fits, selected AR filter matrices `R1`, ..., `Rp`. |
+| R_list | list | For TAR-GAR fits, selected AR filter matrices `R1`, ..., `R_p`, one for each AR lag. |
 | eta | numeric vector | For TAR-GAR fits, selected polynomial filter coefficients. |
 | p, q | integer | For TAR-GAR fits, selected model AR order and polynomial order metadata. |
 
@@ -297,12 +297,14 @@ For most applications, you do not need to inspect `step1`, `step2`, `step3a`, or
 
 ## Datasets
 
-This repository currently contains three datasets.  To load a dataset into the working environment, run `data("<dataname>")`.  
+This repository contains package datasets and application data. Package
+datasets live in `SGM` and can be loaded into the working environment with
+`data("<dataname>")`.
 
 
-* `gar1`: A sample simulated from an underlying GAR(1) model, with p=100, n=100. The underlying graph was a random graph with edge probability 0.02.
+* `gar1`: A sample simulated from an underlying GAR(1) model, with `d = 100` nodes and `n = 100` observations. The underlying graph was a random graph with edge probability 0.02.
 * `stocks`: A collection of (standardized) log-returns from 283 stocks on the S\&P 500.  The dataset spans January 1, 2007, to January 1, 2011, covering the global financial crisis, with 1007 closing prices per stock.  The stocks come from five GICS sectors: 58 from Information Technology, 72 from Consumer Discretionary, 32 from Consumer Staples, 59 from Financials, and 62 from Industrials.
-* `targar`: A sample simulated from an underlying TAR-GAR model, with p=100 nodes and n=100 observations.
+* `targar`: A sample simulated from an underlying TAR-GAR model, with `d = 100` nodes and `n = 100` observations.
 
 These datasets can be accessed as the following R objects.
 
@@ -325,6 +327,22 @@ These datasets can be accessed as the following R objects.
 
 For more information on a given dataset, please run `?<dataname>`.  
 
+The TAR-GAR temperature application also includes year-specific temperature
+application data under `TARGAR/temp-application/data`. These files are not
+installed as package datasets; they are read by the temperature application
+backend using paths inside the repository. The temperature records were
+retrieved from NOAA and focus on California stations for years 2011 through
+2020.
+
+| Application data | Location | Notes |
+|---|---|---|
+| NOAA temperature data, 2011-2015 | `TARGAR/temp-application/data/temperature/temp_<year>.Rda` and `temp_CA_2010_2015.csv` | Year-specific processed matrices are bundled for 2011-2015; the combined CSV is retained as source data for the earlier years. |
+| NOAA temperature data, 2016-2019 | `TARGAR/temp-application/data/temperature/temp_<year>.csv` and, where available, `temp_<year>.Rda` | Raw station-date-temperature CSVs plus processed year matrices for several years. |
+| NOAA GSOD temperature data, 2020 | `TARGAR/temp-application/data/temperature/dailytemp_gsod.csv` | The 2020 run uses this source CSV directly; station coordinates are embedded in the file. |
+| Station coordinates | `TARGAR/temp-application/data/stations/latlong_<yy>.csv` | Latitude/longitude files for the 2011-2019 station sets. |
+| kNN adjacency matrices | `TARGAR/temp-application/data/knn_adj_matrices/` | Stored sparse adjacency matrices used by the G-VAR and graphicalVAR temperature workflows. |
+| Koppen-Geiger rasters | `TARGAR/temp-application/data/koppen_geiger_tif/` | Climate-zone rasters used for temperature-application summaries and plots. |
+
 
 
 ***
@@ -346,17 +364,17 @@ str(gar1)
 ### Get data 
 gar1_data = gar1$data
 nobs = nrow(gar1_data)
-p = ncol(gar1_data)
+d = ncol(gar1_data)
 
 ### Set model to fit
 model = "LN"
 
 ### Set tuning parameters: lambda and net.thre sequence
 C.v=c(1,0.5)  
-lambda.v=C.v*sqrt(log(p)/nobs)
+lambda.v=C.v*sqrt(log(d)/nobs)
 
 C.thre=exp(seq(log(1),log(0.05), length.out=10))
-net.thre=C.thre*sqrt(log(p)/nobs)
+net.thre=C.thre*sqrt(log(d)/nobs)
 
 ### Set ADMM parameter 
 rho.v=pmax(lambda.v, 0.01)
@@ -397,7 +415,7 @@ c(Power) # Power
 c(FDR) # FDR
 
 ## Results:
-## p=100; n=100; true network size = 105; 
+## d=100; n=100; true network size = 105; 
 ## theta0: 0.00967012
 ## L: 0.01916969
 ## Sizes: 103
@@ -466,17 +484,17 @@ data("gar1")
 ### Get data 
 gar1_data = gar1$data
 nobs = nrow(gar1_data)
-p = ncol(gar1_data)
+d = ncol(gar1_data)
 
 ### Set model to fit
 model = "LN"
 
 ### Set tuning parameters: lambda and net.thre sequence
 C.v=c(1,0.5)  
-lambda.v=C.v*sqrt(log(p)/nobs)
+lambda.v=C.v*sqrt(log(d)/nobs)
 
 C.thre=exp(seq(log(1),log(0.05), length.out=10))
-net.thre=C.thre*sqrt(log(p)/nobs)
+net.thre=C.thre*sqrt(log(d)/nobs)
 
 ### Set ADMM parameter 
 rho.v=pmax(lambda.v, 0.01)

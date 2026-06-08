@@ -15,7 +15,7 @@ ADMM.Deg.L(
 )
 }
 \arguments{
-\item{L}{A p by p normalized graph Laplacian}
+\item{L}{A d by d normalized graph Laplacian}
 
 \item{rho}{ADMM parameter (a positive number)}
 
@@ -31,9 +31,9 @@ ADMM.Deg.L(
 }
 \value{
 \itemize{
-\item \code{v}: A p by 1 matrix
-\item \code{w}: A p by 1 matrix
-\item \code{deg}: A p by 1 matrix
+\item \code{v}: A d by 1 matrix
+\item \code{w}: A d by 1 matrix
+\item \code{deg}: A d by 1 matrix
 \item \code{conv}: A boolean indicating whether the algorithm converged (TRUE) or didn't (FALSE).
 }
 }

@@ -11,6 +11,10 @@ The temperature application is organized separately under `temp-application`
 with one user-facing runner and shared backend code for paths, defaults,
 summaries, and model dispatch.
 
+Notation in this folder uses `d` for the signal dimension, i.e. the number of
+nodes, stations, or variables. In TAR-GAR(p,q), `p` is the autoregressive
+order and `q` is the polynomial order in the graph Laplacian.
+
 ## Contents
 
 | File or folder | Description |
@@ -79,7 +83,7 @@ user-facing script and a separate backend:
 | `R/temp_pipeline.R` | TAR-GAR and G-VAR temperature pipeline. |
 | `R/graphicalvar_temp_pipeline.R` | graphicalVAR temperature pipeline. |
 | `scripts/` | Legacy one-model launchers that call the shared backend. |
-| `data/temperature/` | Yearly temperature files and combined source CSVs. |
+| `data/temperature/` | NOAA temperature files for years 2011-2020 and combined source CSVs. |
 | `data/stations/` | Station latitude/longitude files. |
 | `data/knn_adj_matrices/` | Year-specific stored kNN adjacency matrices. |
 | `data/koppen_geiger_tif/` | Koppen-Geiger raster files and legend. |
@@ -111,13 +115,19 @@ The application expects all required files to live inside
 
 | Required files | Expected location |
 |---|---|
-| Temperature data, 2011-2019 | `data/temperature/temp_<year>.Rda` or `data/temperature/temp_<year>.csv` |
-| Temperature data, 2020 | `data/temperature/dailytemp_gsod.csv` |
+| NOAA temperature data, 2011-2019 | `data/temperature/temp_<year>.Rda` or `data/temperature/temp_<year>.csv` |
+| NOAA GSOD temperature data, 2020 | `data/temperature/dailytemp_gsod.csv` |
 | Station coordinates, 2011-2019 | `data/stations/latlong_<yy>.csv` or the matching file inside the year-specific kNN folder |
 | Station coordinates, 2020 | Embedded in `data/temperature/dailytemp_gsod.csv` |
 | kNN adjacency matrices, 2011-2019 | `data/knn_adj_matrices/tr<year>/adjacency_matrix_k_<k>.mtx` |
 | kNN adjacency matrices, 2020 | `data/knn_adj_matrices/adjacency_matrix_k_<k>.mtx` |
 | Koppen-Geiger raster | `data/koppen_geiger_tif/1991_2020/koppen_geiger_0p00833333.tif` |
+
+The temperature data are repository-bundled application data, not package
+datasets loaded with `data()`. The NOAA files follow a station/date/temperature
+schema with station identifiers, names, latitude, longitude, elevation, date,
+and temperature. The backend detrends and imputes these records before fitting
+TAR-GAR, G-VAR, and graphicalVAR models.
 
 The application uses package-owned `SGM::fit_TAR_GAR()`,
 `SGM::TARGAR_pred()`, and `SGM::GVAR_fit()` rather than sourcing separate local

@@ -7,7 +7,7 @@
 ADMM_Deg_L(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose)
 }
 \arguments{
-\item{L}{A  p by p (normalized) graph laplacian}
+\item{L}{A d by d (normalized) graph laplacian}
 
 \item{rho}{ADMM parameter (positive number)}
 
@@ -24,9 +24,9 @@ ADMM_Deg_L(L, rho, epsilon, eps_abs, eps_rel, max_iter, verbose)
 \value{
 A list object
 \itemize{
-\item \code{v}: A p by 1 matrix
-\item \code{w}: A p by 1 matrix
-\item \code{deg}: A p by 1 matrix
+\item \code{v}: A d by 1 matrix
+\item \code{w}: A d by 1 matrix
+\item \code{deg}: A d by 1 matrix
 \item \code{conv} A boolean indicating convergence (TRUE if converged)
 }
 }

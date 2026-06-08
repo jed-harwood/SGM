@@ -29,7 +29,7 @@ ADMM_L2_Zero(
 
 \item{rho}{ADMM parameter.}
 
-\item{AA}{A p by p matrix encoding the zero pattern for the (normalized) graph Laplacian.}
+\item{AA}{A d by d matrix encoding the zero pattern for the (normalized) graph Laplacian.}
 
 \item{model}{A character specifying which type of Laplacian to use.}
 
@@ -51,9 +51,9 @@ ADMM_L2_Zero(
 }
 \value{
 \itemize{
-\item \code{L}: A p by p matrix.
-\item \code{Z}: A p by p matrix.
-\item \code{W}: A p by p matrix,
+\item \code{L}: A d by d matrix.
+\item \code{Z}: A d by d matrix.
+\item \code{W}: A d by d matrix,
 \item \code{theta0}: The estimate for \code{theta0} used.
 \item \code{conv}: A boolean indicating convergence (TRUE if converged).
 }

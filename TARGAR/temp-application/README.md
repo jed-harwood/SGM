@@ -4,6 +4,10 @@ This directory contains the temperature experiments for TAR-GAR, G-VAR, and
 graphicalVAR. The application is organized around one user-facing script and a
 shared backend so that users only need to choose the year and model family.
 
+Notation in this application uses `d` for the number of stations. In
+TAR-GAR(p,q), `p` is the autoregressive order and `q` is the polynomial order
+in the graph Laplacian.
+
 ## Layout
 
 - `run_temp_application.R`: user-facing entrypoint. Pick `year` and `model` here, or pass them as command-line arguments.
@@ -11,7 +15,7 @@ shared backend so that users only need to choose the year and model family.
 - `R/temp_pipeline.R`: TAR-GAR and G-VAR temperature pipeline.
 - `R/graphicalvar_temp_pipeline.R`: graphicalVAR temperature pipeline.
 - `scripts/`: legacy one-model launchers that call the shared backend.
-- `data/temperature/`: yearly temperature files and combined source CSVs.
+- `data/temperature/`: NOAA temperature files for years 2011-2020 and combined source CSVs.
 - `data/stations/`: station latitude/longitude files.
 - `data/knn_adj_matrices/`: year-specific stored kNN adjacency matrices.
 - `data/koppen_geiger_tif/`: Koppen-Geiger raster files and legend.
@@ -56,20 +60,27 @@ Command-line arguments override those values. The bundled temperature years are
 `data/temperature/temp_<year>.csv`, and the 2020 source file
 `data/temperature/dailytemp_gsod.csv`.
 
-## Required Files
+## Datasets And Required Files
 
 All paths are relative to this directory.
 
 | File type | Path pattern |
 |---|---|
-| Temperature data, 2011-2019 | `data/temperature/temp_<year>.Rda` or `data/temperature/temp_<year>.csv` |
-| Temperature data, 2020 | `data/temperature/dailytemp_gsod.csv` |
+| NOAA temperature data, 2011-2019 | `data/temperature/temp_<year>.Rda` or `data/temperature/temp_<year>.csv` |
+| NOAA GSOD temperature data, 2020 | `data/temperature/dailytemp_gsod.csv` |
 | Combined 2010-2015 source data | `data/temperature/temp_CA_2010_2015.csv` |
 | Station coordinates, 2011-2019 | `data/stations/latlong_<yy>.csv` or `data/knn_adj_matrices/tr<year>/latlong_<yy>.csv` |
 | Station coordinates, 2020 | Embedded in `data/temperature/dailytemp_gsod.csv` |
 | kNN adjacency matrices, 2011-2019 | `data/knn_adj_matrices/tr<year>/adjacency_matrix_k_<k>.mtx` |
 | kNN adjacency matrices, 2020 | `data/knn_adj_matrices/adjacency_matrix_k_<k>.mtx` |
 | Koppen-Geiger raster | `data/koppen_geiger_tif/1991_2020/koppen_geiger_0p00833333.tif` |
+
+The temperature files are repository-bundled application data rather than
+package datasets loaded with `data()`. The NOAA records focus on California
+stations for years 2011 through 2020. Raw CSV files use station identifiers,
+station names, latitude, longitude, elevation, date, and temperature columns;
+processed `.Rda` files store year-specific station-by-day temperature matrices
+used by the model pipelines.
 
 The backend validates these paths before loading year-specific data. Generated
 outputs are written to `results/` by default.

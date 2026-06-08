@@ -19,15 +19,15 @@ A matrix with information on 283 stocks across five GICS sectors: 58 from Inform
 \examples{
 data("stocks")
 n=nrow(stocks)
-p=ncol(stocks)
+d=ncol(stocks)
 ### Set the model to fit: GAR(1)-normalized Laplacian model
 model="LN" 
 
 ### Set tuning parameters: lambda and net.thre sequence
 C.v=c(8,4,1)
-lambda.v=C.v*sqrt(log(p)/n)
+lambda.v=C.v*sqrt(log(d)/n)
 C.thre=exp(seq(log(1),log(0.1), length.out=12))
-net.thre=C.thre*sqrt(log(p)/n)
+net.thre=C.thre*sqrt(log(d)/n)
 ### Set ADMM parameter
 rho.v=pmax(lambda.v, 0.01)
 

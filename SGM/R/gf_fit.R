@@ -10,9 +10,9 @@
 GenData.L2 <- function(nobs, theta0, theta1, L, rep = 1) {
   ## nobs: sample size
   ## theta0>0, theta1>0
-  ## L: (normalized) Laplacian, p by p matrix
+  ## L: (normalized) Laplacian, d by d matrix
   ## rep: number of replicates
-  ## return: list of nobs by p data matrices; p by p concentration matrix: Omega; p by p covariance matrix: Sigma
+  ## return: list of nobs by d data matrices; d by d concentration matrix: Omega; d by d covariance matrix: Sigma
 
   library(mnormt)
   data.rep = NULL

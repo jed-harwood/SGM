@@ -910,7 +910,7 @@ TAR.GAR.fit <- function(data, p = 1, q = 1, lambda.v, net.thre,
 #' @description
 #' `TARGAR_fit()` fits a TAR-GAR(p,q) model to temporally dependent
 #' multivariate data. It alternates between estimating AR filter matrices
-#' `R1`, ..., `Rp` and estimating the latent graph Laplacian for the
+#' `R_1`, ..., `R_p` lag filters and estimating the latent graph Laplacian for the
 #' innovation process, then refits the graph over the supplied `net.thre`
 #' sequence.
 #'

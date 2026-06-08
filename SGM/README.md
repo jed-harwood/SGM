@@ -31,9 +31,9 @@ Load package datasets with `data("<dataname>")`.
 
 | Dataset | Description |
 |---|---|
-| `gar1` | A sample simulated from an underlying GAR(1) model, with p = 100 and n = 100. |
+| `gar1` | A sample simulated from an underlying GAR(1) model, with `d = 100` nodes and `n = 100` observations. |
 | `stocks` | Standardized log-returns from 283 stocks on the S&P 500, spanning January 1, 2007, to January 1, 2011. |
-| `targar` | A sample simulated from an underlying TAR-GAR model, with p = 100 nodes and n = 100 observations. |
+| `targar` | A sample simulated from an underlying TAR-GAR model, with `d = 100` nodes and `n = 100` observations. |
 
 For more information on a dataset, run `?<dataname>` in R.
 
@@ -59,10 +59,10 @@ library(SGM)
 data("gar1")
 S <- var(gar1$data) * (nrow(gar1$data) - 1) / nrow(gar1$data)
 nobs <- nrow(gar1$data)
-p <- ncol(gar1$data)
+d <- ncol(gar1$data)
 
-lambda.v <- c(1, 0.5) * sqrt(log(p) / nobs)
-net.thre <- exp(seq(log(1), log(0.05), length.out = 10)) * sqrt(log(p) / nobs)
+lambda.v <- c(1, 0.5) * sqrt(log(d) / nobs)
+net.thre <- exp(seq(log(1), log(0.05), length.out = 10)) * sqrt(log(d) / nobs)
 rho.v <- pmax(lambda.v, 0.01)
 
 fit <- GAR1_fit(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v = rho.v)
