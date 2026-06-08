@@ -30,4 +30,5 @@ Collate:
     'dataExample.R'
     'dataExampleGAR1.R'
     'dataExampleTARGAR.R'
+    'forecast_gvar.R'
     'gf_fit.R'
