@@ -3,8 +3,9 @@
 .RData
 .Ruserdata
 .DS_Store
+*.Rproj
+Thumbs.db
+desktop.ini
 SGM/src/*.o
 SGM/src/*.so
 SGM/src/*.dll
-.DS_Store
-.DS_Store
