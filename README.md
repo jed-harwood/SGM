@@ -508,6 +508,9 @@ GAR1_gf(S, nobs, lambda.v[1], num.thread = 2)
 
 - Harwood, J., Paul, S., and Peng, J. (2024). Learning Latent Graphs from
   Stationary Signals via a Graph Autoregressive Model.
+- Friedman, J., Hastie, T., and Tibshirani, R. (2008). Sparse inverse
+  covariance estimation with the graphical lasso. Biostatistics, 9(3),
+  432-441. https://doi.org/10.1093/biostatistics/kxm045
 - Epskamp, S. (2017). graphicalVAR: Graphical VAR for experience sampling
   data. CRAN package documentation.
   https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf
