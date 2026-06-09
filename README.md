@@ -506,6 +506,8 @@ GAR1_gf(S, nobs, lambda.v[1], num.thread = 2)
 
 ## References
 
+- Harwood, J., Paul, S., and Peng, J. (2024). Learning Latent Graphs from
+  Stationary Signals via a Graph Autoregressive Model.
 - Epskamp, S. (2017). graphicalVAR: Graphical VAR for experience sampling
   data. CRAN package documentation.
   https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf

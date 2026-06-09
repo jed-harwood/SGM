@@ -78,7 +78,8 @@ Depending on which scripts you run, this folder may contain generated files such
 
 ## References
 
-- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
-  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
-  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
-  https://doi.org/10.1109/TSP.2019.2929930
+- Harwood, J., Paul, S., and Peng, J. (2024). Learning Latent Graphs from
+  Stationary Signals via a Graph Autoregressive Model.
+- Friedman, J., Hastie, T., and Tibshirani, R. (2008). Sparse inverse
+  covariance estimation with the graphical lasso. Biostatistics, 9(3),
+  432-441. https://doi.org/10.1093/biostatistics/kxm045
