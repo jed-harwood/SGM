@@ -4,6 +4,8 @@ This folder is the TAR-GAR analysis area for the repository. It contains the
 TAR-GAR simulation suite, reusable simulation helpers, and the temperature
 application for comparing TAR-GAR, G-VAR, and graphicalVAR on year-specific
 temperature data.
+The graphicalVAR baseline follows Epskamp (2017), and the G-VAR baseline
+follows Isufi et al. (2019).
 
 The simulation scripts are organized around main user-facing drivers at the
 top level and reusable helper functions in `simulation-auxiliary-scripts`.
@@ -323,3 +325,13 @@ output file. Set `keep.fits = FALSE` to save only setup, metrics, and summaries.
   `n`, `n.rep`, and `num.thread` in the setup block.
 - The scripts clear the workspace with `rm(list = ls())`, so it is best to run
   them in a fresh R session.
+
+## References
+
+- Epskamp, S. (2017). graphicalVAR: Graphical VAR for experience sampling
+  data. CRAN package documentation.
+  https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf
+- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
+  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
+  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
+  https://doi.org/10.1109/TSP.2019.2929930

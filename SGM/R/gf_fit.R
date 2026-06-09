@@ -149,6 +149,11 @@ bootstrap.like <- function(L, theta0, theta1, nobs, lambda.v, rho.v = lambda.v,
 #' 
 #' @returns p-value for the goodness of fit test 
 #' 
+#' @references
+#' Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019).
+#' Forecasting Time Series With VARMA Recursions on Graphs.
+#' \emph{IEEE Transactions on Signal Processing}, 67(18), 4870-4885.
+#' \doi{10.1109/TSP.2019.2929930}
 #' @export
 GAR1_gf = function(S, nobs, lambda.v, rho.v = lambda.v, eps_thre = 1e-6, eps_abs = 1e-5,
                    eps_rel = 1e-3, max_iter = 10000, num.thread = 1, rep.boot = 100, seed = 1) {

@@ -3,6 +3,8 @@
 This directory contains the temperature experiments for TAR-GAR, G-VAR, and
 graphicalVAR. The application is organized around one user-facing script and a
 shared backend so that users only need to choose the year and model family.
+The graphicalVAR baseline follows Epskamp (2017), and the G-VAR baseline
+follows Isufi et al. (2019).
 
 Notation in this application uses `d` for the number of stations. In
 TAR-GAR(p,q), `p` is the autoregressive order and `q` is the polynomial order
@@ -84,3 +86,13 @@ used by the model pipelines.
 
 The backend validates these paths before loading year-specific data. Generated
 outputs are written to `results/` by default.
+
+## References
+
+- Epskamp, S. (2017). graphicalVAR: Graphical VAR for experience sampling
+  data. CRAN package documentation.
+  https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf
+- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
+  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
+  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
+  https://doi.org/10.1109/TSP.2019.2929930

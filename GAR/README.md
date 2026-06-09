@@ -1,6 +1,10 @@
 # GAR
 
-This folder contains the companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper. These scripts are separate from the `SGM` package itself and are intended for reproducibility, experimentation, and worked examples.
+This folder contains the companion analysis scripts used to reproduce the
+simulation studies and stock-market application from the GAR paper. These
+scripts are separate from the `SGM` package itself and are intended for
+reproducibility, experimentation, and worked examples. The GAR analyses cite
+the graph VARMA forecasting framework of Isufi et al. (2019).
 
 ## Contents
 
@@ -72,3 +76,10 @@ Depending on which scripts you run, this folder may contain generated files such
 - These scripts assume the `SGM` package and any additional analysis dependencies are installed.
 - Several scripts clear the workspace with `rm(list = ...)`, so it is best to run them in a fresh R session.
 - The stock workflow uses path-aware `source()` and file-loading logic so it can be run from the repository root or from inside this folder.
+
+## References
+
+- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
+  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
+  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
+  https://doi.org/10.1109/TSP.2019.2929930

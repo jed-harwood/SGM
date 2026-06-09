@@ -4,6 +4,10 @@
 ## DATE: 7/21/25
 #########################################
 
+## G-VAR baseline reference: Isufi, E., Loukas, A., Perraudin, N., and
+## Leus, G. (2019). Forecasting Time Series With VARMA Recursions on Graphs.
+## IEEE Transactions on Signal Processing, 67(18), 4870-4885.
+## https://doi.org/10.1109/TSP.2019.2929930
 
 ## Packages 
 library(dplyr)

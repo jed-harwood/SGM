@@ -12,3 +12,9 @@ A package for learning latent graphs from stationary signals.  This package prov
 put them here
 }
 
+\references{
+Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019).
+Forecasting Time Series With VARMA Recursions on Graphs.
+\emph{IEEE Transactions on Signal Processing}, 67(18), 4870-4885.
+\doi{10.1109/TSP.2019.2929930}
+}

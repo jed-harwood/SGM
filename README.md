@@ -11,6 +11,7 @@ An R package for fitting Spectral Graph Models
 - [Main Functions](#Main-Functions)
 - [Datasets](#Datasets)
 - [Examples](#Examples)
+- [References](#References)
 - [Contact](#Contact)
 
 *** 
@@ -32,6 +33,8 @@ Most users will work with the `SGM` package directly:
 
 The `GAR` folder builds on that package API with reproducible simulation
 studies and a stock-market application for the GAR paper.
+The GAR analysis documentation cites the graph VARMA forecasting paper of
+Isufi et al. (2019).
 
 For temporally dependent signals with explicit autoregressive graph filters,
 use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
@@ -40,6 +43,8 @@ rhythm: fit a path over `lambda.v` and `net.thre`, select with
 The `TARGAR` folder builds on that package API with reproducible simulations
 and a temperature application that compares TAR-GAR, G-VAR, and graphicalVAR
 on year-specific temperature data.
+The graphicalVAR baseline follows Epskamp (2017), and the G-VAR baseline
+follows the graph VARMA forecasting framework of Isufi et al. (2019).
 
 ## Installation 
 
@@ -508,6 +513,18 @@ GAR1_gf(S, nobs, lambda.v[1], num.thread = 2)
 # > 1
 
 ```
+
+***
+
+## References
+
+- Epskamp, S. (2017). graphicalVAR: Graphical VAR for experience sampling
+  data. CRAN package documentation.
+  https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf
+- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
+  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
+  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
+  https://doi.org/10.1109/TSP.2019.2929930
 
 ***
 

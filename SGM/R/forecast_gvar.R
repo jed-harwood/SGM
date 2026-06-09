@@ -234,6 +234,11 @@ gvar_autocov <- function(data, order = 0) {
 #' @param L_q_vec Polynomial orders in the graph Laplacian for each lag.
 #'
 #' @returns A list with graph filter coefficients, filter matrices, and AIC.
+#' @references
+#' Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019).
+#' Forecasting Time Series With VARMA Recursions on Graphs.
+#' \emph{IEEE Transactions on Signal Processing}, 67(18), 4870-4885.
+#' \doi{10.1109/TSP.2019.2929930}
 #' @export
 GVAR_fit <- function(data, A, q, L_q_vec) {
   p <- nrow(A)

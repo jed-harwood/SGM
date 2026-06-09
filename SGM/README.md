@@ -3,6 +3,8 @@
 The `SGM` directory contains the R package for fitting Spectral Graph Models.
 It provides GAR(1), TAR-GAR, model selection, forecasting, G-VAR helper, and
 goodness-of-fit functions, along with the package datasets and documentation.
+The G-VAR helper follows the graph VARMA forecasting framework of Isufi et al.
+(2019).
 
 ## Installation
 
@@ -76,3 +78,10 @@ sel$v0
 
 The repository-level `README.md` contains the full argument and output tables
 for these functions.
+
+## References
+
+- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
+  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
+  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
+  https://doi.org/10.1109/TSP.2019.2929930

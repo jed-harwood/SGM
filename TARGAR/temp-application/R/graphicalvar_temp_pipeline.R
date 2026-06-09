@@ -4,6 +4,9 @@
 
 ## This script intentionally reuses the temp_detrend function from
 ## temp_pipeline.R without evaluating the rest of that TAR-GAR pipeline.
+## graphicalVAR baseline reference: Epskamp, S. (2017). graphicalVAR:
+## Graphical VAR for experience sampling data. CRAN package documentation.
+## https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf
 
 library(dplyr)
 library(readr)

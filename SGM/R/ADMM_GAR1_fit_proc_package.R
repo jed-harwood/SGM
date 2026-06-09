@@ -302,6 +302,11 @@ fit_step_3 = function(step0a, step1, step2, lambda.v, net.thre, model, eps_thre,
 #' * `v0.s3` A list containing the Step 3a `v0` estimates (NULL if `step<3`).
 #' * `conv` A list of convergence diagnostics with components `step1`, `step2`, `step3a`, and `step3b`.
 #'
+#' @references
+#' Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019).
+#' Forecasting Time Series With VARMA Recursions on Graphs.
+#' \emph{IEEE Transactions on Signal Processing}, 67(18), 4870-4885.
+#' \doi{10.1109/TSP.2019.2929930}
 #' @example man-roxygen/GAR1_fit_example.R
 #' @export
 GAR1_fit = function(S, nobs, lambda.v, net.thre, model = "LN", step = 3, rho.v = lambda.v, eps_thre = 1e-6, eps_abs = 1e-5, eps_rel = 1e-3, max_iter_s1 = 10000, max_iter_s2 = 10000, max_iter_s3 = 10000, verbose = FALSE){

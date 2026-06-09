@@ -47,3 +47,9 @@ p-value for the goodness of fit test
 \description{
 This function provides a goodness of fit test to see whether a GAR(1) model with the normalized Laplacian is applicable. It is valid when the signal dimension is at most the number of observations available.
 }
+\references{
+Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019).
+Forecasting Time Series With VARMA Recursions on Graphs.
+\emph{IEEE Transactions on Signal Processing}, 67(18), 4870-4885.
+\doi{10.1109/TSP.2019.2929930}
+}
