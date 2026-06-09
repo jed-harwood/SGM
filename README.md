@@ -33,8 +33,6 @@ Most users will work with the `SGM` package directly:
 
 The `GAR` folder builds on that package API with reproducible simulation
 studies and a stock-market application for the GAR paper.
-The GAR analysis documentation cites the graph VARMA forecasting paper of
-Isufi et al. (2019).
 
 For temporally dependent signals with explicit autoregressive graph filters,
 use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
@@ -112,7 +110,7 @@ The `TARGAR` folder contains:
 * `simulations_TARGAR11_on_TARGAR_pq.R`, the misspecified TAR-GAR(1,1)-on-TAR-GAR(p,q) simulation driver,
 * `simulation-auxiliary-scripts/`, reusable helpers for TAR-GAR graph generation, data generation, fitting, eBIC computation, and metrics,
 * `temp-application/`, a year-selectable temperature application for TAR-GAR, G-VAR, and graphicalVAR analyses,
-* bundled temperature data, station files, kNN adjacency matrices, and Koppen-Geiger raster assets used by the temperature application, and
+* bundled temperature data and supporting assets used by the temperature application, and
 * generated simulation or application outputs under local `results/` folders.
 
 The `TARGAR` folder is separate from the `SGM` package itself. It is intended
@@ -332,21 +330,11 @@ These datasets can be accessed as the following R objects.
 
 For more information on a given dataset, please run `?<dataname>`.  
 
-The TAR-GAR temperature application also includes year-specific temperature
-application data under `TARGAR/temp-application/data`. These files are not
-installed as package datasets; they are read by the temperature application
-backend using paths inside the repository. The temperature records were
-retrieved from NOAA and focus on California stations for years 2011 through
-2020.
-
-| Application data | Location | Notes |
-|---|---|---|
-| NOAA temperature data, 2011-2015 | `TARGAR/temp-application/data/temperature/temp_<year>.Rda` and `temp_CA_2010_2015.csv` | Year-specific processed matrices are bundled for 2011-2015; the combined CSV is retained as source data for the earlier years. |
-| NOAA temperature data, 2016-2019 | `TARGAR/temp-application/data/temperature/temp_<year>.csv` and, where available, `temp_<year>.Rda` | Raw station-date-temperature CSVs plus processed year matrices for several years. |
-| NOAA GSOD temperature data, 2020 | `TARGAR/temp-application/data/temperature/dailytemp_gsod.csv` | The 2020 run uses this source CSV directly; station coordinates are embedded in the file. |
-| Station coordinates | `TARGAR/temp-application/data/stations/latlong_<yy>.csv` | Latitude/longitude files for the 2011-2019 station sets. |
-| kNN adjacency matrices | `TARGAR/temp-application/data/knn_adj_matrices/` | Stored sparse adjacency matrices used by the G-VAR and graphicalVAR temperature workflows. |
-| Koppen-Geiger rasters | `TARGAR/temp-application/data/koppen_geiger_tif/` | Climate-zone rasters used for temperature-application summaries and plots. |
+The TAR-GAR temperature application also includes year-specific application
+data under `TARGAR/temp-application/data`. These files are not installed as
+package datasets; they are read by the temperature application backend using
+paths inside the repository. See `TARGAR/temp-application/README.md` for the
+temperature-pipeline data layout.
 
 
 

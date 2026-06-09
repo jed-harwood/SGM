@@ -87,7 +87,7 @@ user-facing script and a separate backend:
 | `scripts/` | Legacy one-model launchers that call the shared backend. |
 | `data/temperature/` | NOAA temperature files for years 2011-2020 and combined source CSVs. |
 | `data/stations/` | Station latitude/longitude files. |
-| `data/knn_adj_matrices/` | Year-specific stored kNN adjacency matrices. |
+| `data/knn_adj_matrices/` | Year-specific stored kNN adjacency matrices used by the G-VAR baseline. |
 | `data/koppen_geiger_tif/` | Koppen-Geiger raster files and legend. |
 | `results/` | Generated `.RData`, clustering summaries, and plot PDFs. |
 
@@ -121,8 +121,8 @@ The application expects all required files to live inside
 | NOAA GSOD temperature data, 2020 | `data/temperature/dailytemp_gsod.csv` |
 | Station coordinates, 2011-2019 | `data/stations/latlong_<yy>.csv` or the matching file inside the year-specific kNN folder |
 | Station coordinates, 2020 | Embedded in `data/temperature/dailytemp_gsod.csv` |
-| kNN adjacency matrices, 2011-2019 | `data/knn_adj_matrices/tr<year>/adjacency_matrix_k_<k>.mtx` |
-| kNN adjacency matrices, 2020 | `data/knn_adj_matrices/adjacency_matrix_k_<k>.mtx` |
+| G-VAR kNN adjacency matrices, 2011-2019 | `data/knn_adj_matrices/tr<year>/adjacency_matrix_k_<k>.mtx` |
+| G-VAR kNN adjacency matrices, 2020 | `data/knn_adj_matrices/adjacency_matrix_k_<k>.mtx` |
 | Koppen-Geiger raster | `data/koppen_geiger_tif/1991_2020/koppen_geiger_0p00833333.tif` |
 
 The temperature data are repository-bundled application data, not package

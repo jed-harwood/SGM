@@ -3,8 +3,7 @@
 This folder contains the companion analysis scripts used to reproduce the
 simulation studies and stock-market application from the GAR paper. These
 scripts are separate from the `SGM` package itself and are intended for
-reproducibility, experimentation, and worked examples. The GAR analyses cite
-the graph VARMA forecasting framework of Isufi et al. (2019).
+reproducibility, experimentation, and worked examples.
 
 ## Contents
 
