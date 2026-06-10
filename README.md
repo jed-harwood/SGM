@@ -94,7 +94,7 @@ The `TARGAR` folder contains:
 * `simulation-auxiliary-scripts/`, reusable helpers for TAR-GAR graph generation, data generation, fitting, eBIC computation, and metrics,
 * `temp-application/`, a year-selectable temperature application for TAR-GAR, G-VAR, and graphicalVAR analyses,
 * bundled temperature data and supporting assets used by the temperature application, and
-* generated simulation or application outputs under local `results/` folders.
+* generated simulation or application outputs.
 
 ## Main Functions
 
