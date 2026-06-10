@@ -24,7 +24,7 @@ and two companion analysis areas:
 * `GAR`: simulation and stock-market analyses from the GAR paper.
 * `TARGAR`: TAR-GAR simulations and the temperature application.
 
-Most users will work with the `SGM` package directly:
+For independent data: 
 
 1. Compute a covariance matrix `S` from data.
 2. Fit a GAR model with `GAR1_fit()`.
