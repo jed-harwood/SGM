@@ -70,8 +70,8 @@ R CMD INSTALL ../../SGM
 This repository has three main folders.
 
 * `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
-* `GAR`: Companion analysis scripts used to reproduce the simulation studies and stock-market application from the GAR paper.
-* `TARGAR`: TAR-GAR simulation scripts, reusable TAR-GAR experiment helpers, and the temperature application.
+* `GAR`: GAR simulation scripts and stock-market application.
+* `TARGAR`: TAR-GAR simulation scripts and the temperature application.
 
 ### `SGM` Package
 
