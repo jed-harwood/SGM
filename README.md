@@ -21,27 +21,19 @@ An R package for fitting Spectral Graph Models
 This repository contains the `SGM` R package for fitting Spectral Graph Models
 and two companion analysis areas:
 
-* `GAR`: simulation and stock-market analyses from the GAR paper.
-* `TARGAR`: TAR-GAR simulations and the temperature application.
+* `GAR`: simulation and the stock-market application from the GAR paper.
+* `TARGAR`: TAR-GAR simulations and the CA temperature application.
 
-For independent data: 
+* SGM package usage: For independent data: 
 
 1. Compute a covariance matrix `S` from data.
 2. Fit a GAR model with `GAR1_fit()`.
 3. Select a final model with `model_selec()`.
 4. Extract `theta0`, `theta1`, `L`, and `v0` from the selected model.
 
-The `GAR` folder builds on that package API with reproducible simulation
-studies and a stock-market application for the GAR paper.
 
 For temporally dependent signals: use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
-rhythm: fit a path over `lambda.v` and `net.thre`, select with
-`model_selec()`, then inspect the selected Laplacian and AR filter matrices.
-The `TARGAR` folder builds on that package API with reproducible simulations
-and a temperature application that compares TAR-GAR, G-VAR, and graphicalVAR
-on year-specific temperature data.
-The graphicalVAR baseline follows Epskamp (2017), and the G-VAR baseline
-follows the graph VARMA forecasting framework of Isufi et al. (2019).
+rhythm: fit a path over `lambda.v` and `net.thre`, select with `model_selec()`, then inspect the selected Laplacian and AR filter matrices.
 
 ## Installation 
 
@@ -70,8 +62,8 @@ R CMD INSTALL ../../SGM
 This repository has three main folders.
 
 * `SGM`: The R package itself. It contains the user-facing fitting functions, documentation, C++ solvers, datasets, and examples.
-* `GAR`: GAR simulation scripts and stock-market application.
-* `TARGAR`: TAR-GAR simulation scripts and the temperature application.
+* `GAR`: GAR simulation scripts and the stock-market application.
+* `TARGAR`: TAR-GAR simulation scripts and the CA temperature application.
 
 ### `SGM` Package
 
@@ -82,7 +74,7 @@ The `SGM` package folder contains:
 * C++ solvers used by the ADMM routines, and
 * package examples.
 
-### `GAR` Analyses
+### `GAR` Folder
 
 The `GAR` folder contains:
 
@@ -91,11 +83,9 @@ The `GAR` folder contains:
 * `stock_data_script.R`, the stock-market application driver,
 * `stock-auxiliary-scripts/`, preprocessing and post-processing utilities for the stock application,
 * bundled stock data and derived stock-return data files, and
-* generated GAR, GLASSO, and stock-network outputs under the `GAR` folder.
+* generated GAR, GLASSO, and stock-network outputs.
 
-The `GAR` folder is separate from the `SGM` package itself and is intended for reproducibility and worked examples rather than the package API.
-
-### `TARGAR` Analyses And Temperature Application
+### `TARGAR` Folder
 
 The `TARGAR` folder contains:
 
@@ -105,10 +95,6 @@ The `TARGAR` folder contains:
 * `temp-application/`, a year-selectable temperature application for TAR-GAR, G-VAR, and graphicalVAR analyses,
 * bundled temperature data and supporting assets used by the temperature application, and
 * generated simulation or application outputs under local `results/` folders.
-
-The `TARGAR` folder is separate from the `SGM` package itself. It is intended
-for TAR-GAR reproducibility, worked examples, and the applied temperature
-workflow rather than as the package API.
 
 ## Main Functions
 
@@ -132,7 +118,7 @@ workflow rather than as the package API.
 
 `GVAR_fit`: fit the G-VAR baseline used by the temperature application. The compatibility wrapper `G.VAR.Fit()` is also exported for older scripts.
 
-Typical workflow:
+GAR workflow:
 
 ```r
 fit <- GAR1_fit(S, nobs, lambda.v, net.thre, model = "LN")
