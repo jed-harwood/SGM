@@ -62,12 +62,6 @@ install_github(repo="jed-harwood/SGM", subdir="SGM")
 From a local checkout of this repository, install the package with:
 
 ```sh
-R CMD INSTALL SGM
-```
-
-The temperature application in `TARGAR/temp-application` also relies on the installed `SGM` package for TAR-GAR, prediction, and G-VAR functions. When running from inside that application folder, reinstall the local package with:
-
-```sh
 R CMD INSTALL ../../SGM
 ```
 
