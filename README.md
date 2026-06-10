@@ -34,8 +34,7 @@ For independent data:
 The `GAR` folder builds on that package API with reproducible simulation
 studies and a stock-market application for the GAR paper.
 
-For temporally dependent signals with explicit autoregressive graph filters,
-use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
+For temporally dependent signals: use `TARGAR_fit()` instead. The TAR-GAR workflow follows the same package
 rhythm: fit a path over `lambda.v` and `net.thre`, select with
 `model_selec()`, then inspect the selected Laplacian and AR filter matrices.
 The `TARGAR` folder builds on that package API with reproducible simulations
