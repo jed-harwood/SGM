@@ -23,6 +23,24 @@ reproducibility, experimentation, and worked examples.
 | `stock-auxiliary-scripts/stock_data_processing.R` | Preprocesses the raw stock dataset, constructs the log-return matrix `X`, stores sector counts in `sp.num`, saves `stock.data.X.Rdata`, and produces exploratory plots and autocorrelation summaries. |
 | `stock-auxiliary-scripts/stock_gar_res_process.R` | Post-processes fitted GAR and GLASSO models for the stock application. It computes model-size and log-likelihood summaries, performs GAR model selection, creates sector-level connectivity summaries, and writes the sector-network plot. |
 
+## Installation
+
+The scripts in this folder rely on the local `SGM` package for TAR-GAR fitting,
+prediction, and G-VAR functionality. From the repository root, install or
+reinstall the package before running either the simulations or the temperature
+application:
+
+```sh
+R CMD INSTALL SGM
+```
+
+The package can also be installed from GitHub:
+
+```r
+library(devtools)
+install_github(repo = "jed-harwood/SGM", subdir = "SGM")
+```
+
 ## Typical Workflows
 
 ### Simulation study
