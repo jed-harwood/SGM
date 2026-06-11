@@ -309,13 +309,6 @@ These datasets can be accessed as the following R objects.
 
 For more information on a given dataset, please run `?<dataname>`.  
 
-The TAR-GAR temperature application also includes year-specific application
-data under `TARGAR/temp-application/data`. These files are not installed as
-package datasets; they are read by the temperature application backend using
-paths inside the repository. See `TARGAR/temp-application/README.md` for the
-temperature-pipeline data layout.
-
-
 
 ***
 
@@ -487,16 +480,6 @@ GAR1_gf(S, nobs, lambda.v[1], num.thread = 2)
 
 - Harwood, J., Paul, S., and Peng, J. (2024). Learning Latent Graphs from
   Stationary Signals via a Graph Autoregressive Model.
-- Friedman, J., Hastie, T., and Tibshirani, R. (2008). Sparse inverse
-  covariance estimation with the graphical lasso. Biostatistics, 9(3),
-  432-441. https://doi.org/10.1093/biostatistics/kxm045
-- Epskamp, S. (2017). graphicalVAR: Graphical VAR for experience sampling
-  data. CRAN package documentation.
-  https://cran.r-project.org/web/packages/graphicalVAR/graphicalVAR.pdf
-- Isufi, E., Loukas, A., Perraudin, N., and Leus, G. (2019). Forecasting Time
-  Series With VARMA Recursions on Graphs. IEEE Transactions on Signal
-  Processing, vol. 67, no. 18, pp. 4870-4885, 15 Sept. 2019.
-  https://doi.org/10.1109/TSP.2019.2929930
 
 ***
 
