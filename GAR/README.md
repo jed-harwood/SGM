@@ -76,10 +76,4 @@ Depending on which scripts you run, this folder may contain generated files such
 - Several scripts clear the workspace with `rm(list = ...)`, so it is best to run them in a fresh R session.
 - The stock workflow uses path-aware `source()` and file-loading logic so it can be run from the repository root or from inside this folder.
 
-## References
 
-- Harwood, J., Paul, S., and Peng, J. (2024). Learning Latent Graphs from
-  Stationary Signals via a Graph Autoregressive Model.
-- Friedman, J., Hastie, T., and Tibshirani, R. (2008). Sparse inverse
-  covariance estimation with the graphical lasso. Biostatistics, 9(3),
-  432-441. https://doi.org/10.1093/biostatistics/kxm045
