@@ -29,7 +29,7 @@ order and `q` is the polynomial order in the graph Laplacian.
 
 ## Installation
 
-The scripts in this folder rely on the local `SGM` package for TAR-GAR fitting,
+The scripts in this folder rely on the `SGM` package for TAR-GAR fitting,
 prediction, and G-VAR functionality. From the repository root, install or
 reinstall the package before running either the simulations or the temperature
 application:
