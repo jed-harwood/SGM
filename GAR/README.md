@@ -26,7 +26,7 @@ reproducibility, experimentation, and worked examples.
 ## Installation
 
 The scripts in this folder rely on the `SGM` package for GAR fitting. From the repository root, install or
-reinstall the package before running either the simulations or the stock price application.
+reinstall the package before running either the simulations or the stock price application:
 
 ```sh
 R CMD INSTALL SGM
